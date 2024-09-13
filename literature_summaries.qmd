@@ -1,0 +1,250 @@
+---
+title: "Literature Summary for Beta Regression"
+author: "Anaite Montes Bu"
+format:
+  html:
+    toc: true
+    html-math-method: katex
+    css: styles.css
+---
+```{r}
+options(repos = c(CRAN = "https://cloud.r-project.org"))
+
+```
+
+
+
+
+## 1. BETA REGRESSION FOR MODELLING RATES AND PROPORTIONS
+
+#### https://www.ime.usp.br/\~sferrari/beta.pdf
+
+This paper introduces a regression model where the response variable follows a beta distribution. The model is based on the beta distribution but is adjusted to focus on the mean and variability (dispersion) of the data. A beta regression model is designed for data where the response variable is continuous and confined within the interval (0, 1), such as rates and proportions. It is important to note that no observation can equal exactly zero or exactly one, i.e. 0 \< y \< 1.
+
+-   Highly flexible for modeling proportions due to its ability to assume different shapes depending on the values of its two parameters. The model uses a parameterization that focuses on the mean (central tendency) and the precision (inverse of variability).
+
+-   The model uses different link functions to relate the mean response to explanatory variables. **Logit link** allows for interpreting the model's parameters in terms of odds ratios.
+
+-   The parameters of the beta regression model are estimated using maximum likelihood methods.
+
+-   Diagnostic tools are used, including leverage measures, standardized and deviance residuals, and Cook’s distance, all of which help assess model fit and identify influential data points. These methods are essential for checking the assumptions and validity of the model.
+
+-   Large-sample methods are discussed, including likelihood ratio tests, Wald tests, and score tests. These methods allow for hypothesis testing about the model parameters and for constructing confidence intervals.
+
+## 2. Extended Beta Regression in R: Shaken, Stirred, Mixed, and Partitioned
+
+#### https://www.jstatsoft.org/article/view/v048i11
+
+The paper expands on beta regression in three main ways:
+
+-   **Bias Correction/Reduction:** The paper address bias in the Maximum Likelihood Estimation (MLE), particularly in estimating the precision parameter. Bias correction and bias reduction techniques ensure more accurate inference by shrinking overly optimistic parameter estimates.
+
+```{r}
+# Bias correction using betareg package
+library(betareg)
+
+data("ReadingSkills", package = "betareg")
+
+# Specify the formula with interactions for both the mean and precision submodels
+rs_f <- accuracy ~ dyslexia * iq | dyslexia * iq
+
+# Fit beta regression models using different types (ML, BC, BR)
+rs_ml <- betareg(rs_f, data = ReadingSkills, type = "ML")
+rs_bc <- betareg(rs_f, data = ReadingSkills, type = "BC")
+rs_br <- betareg(rs_f, data = ReadingSkills, type = "BR")
+
+# Display the summary for bias-corrected beta regression
+summary(rs_bc)
+
+```
+
+-   **Beta Regression Trees:** This extension uses recursive partitioning to model data that might exhibit subgroup-specific relationships. It builds decision trees by splitting data into different subgroups based on the instability of model parameters across partitioning variables.
+
+```{r}
+# Load partykit for recursive partitioning
+library(partykit)
+
+# Add noise variables for demonstration
+set.seed(1071)
+n <- nrow(ReadingSkills)
+ReadingSkills$x1 <- rnorm(n)
+ReadingSkills$x2 <- runif(n)
+ReadingSkills$x3 <- factor(sample(0:1, n, replace = TRUE))
+
+# Fit a beta regression tree with recursive partitioning
+rs_tree <- betatree(accuracy ~ iq | iq, ~ dyslexia + x1 + x2 + x3, data = ReadingSkills, minsplit = 10)
+
+# Plot the resulting tree
+plot(rs_tree)
+```
+
+-   **Latent Class Beta Regression (Mixture Models):** This extension deals with latent (unobserved) heterogeneity. It models data from multiple latent subgroups where the relationship between the response and explanatory variables varies. Mixture models assign probabilities for observations to belong to different latent classes.
+
+```{r}
+# Fit a latent class beta regression model with 3 components
+rs_mix <- betamix(accuracy ~ iq, data = ReadingSkills, k = 3, nstart = 10)
+
+# Summary of the mixture model
+summary(rs_mix)
+
+```
+
+## 3. Package "betareg"
+
+#### https://cran.r-project.org/web/packages/betareg/betareg.pdf
+
+Beta regression for modeling beta-distributed dependent variables on the open unit interval (0, 1).
+
+Extended-support beta regression models can accommodate dependent variables with boundary observations at 0 and/or 1.
+
+**Beta01**
+
+The Beta01 distribution extends the beta distribution by allowing for point masses at 0 and/or 1, which means it can handle cases where the data include exact values of 0 and 1. This is useful for scenarios where proportions sometimes hit the boundaries.
+
+-   Beta-distributed component: For values between 0 and 1, it behaves like a standard beta distribution.
+-   Point mass component: It adds probabilities at 0 and/or 1 to account for boundary values. This is called **zero inflation** or **one inflation** because we're adding (or "inflating") the probability at these boundary points, which a standard beta distribution wouldn't otherwise accommodate.
+
+**Usage**
+
+Beta01(mu, phi, p0 = 0, p1 = 0)
+
+**Arguments**
+
+-   mu: numeric. The mean of the beta distribution (on the open unit interval).
+-   phi: numeric. The precision parameter of the beta distribution.
+-   p0: numeric. The probability for an observation of zero (often referred to as zero inflation).
+-   p1: numeric. The probability for an observation of one (often referred to as one inflation).
+
+**Example**
+
+```{r}
+## package and random seed
+install.packages("distributions3")
+library("distributions3")
+set.seed(6020)
+## three beta distributions
+X <- Beta01(
+mu = c(0.25, 0.50, 0.75),
+phi = c(1, 1, 2),
+p0 = c(0.1, 0, 0),
+p1 = c(0, 0, 0.3)
+)
+X
+## compute moments of the distribution
+mean(X)
+variance(X)
+## support interval (minimum and maximum)
+support(X)
+## simulate random variables
+random(X, 5)
+
+## histograms of 1,000 simulated observations
+x <- random(X, 1000)
+hist(x[1, ])
+hist(x[2, ])
+hist(x[3, ])
+## probability density function (PDF) and log-density (or log-likelihood)
+x <- c(0.25, 0.5, 0.75)
+pdf(X, x)
+pdf(X, x, log = TRUE)
+log_pdf(X, x)
+## cumulative distribution function (CDF)
+cdf(X, x)
+## quantiles
+quantile(X, 0.5)
+## cdf() and quantile() are inverses
+cdf(X, quantile(X, 0.5))
+quantile(X, cdf(X, 1))
+## point mass probabilities (if any) on boundary
+cdf(X, 0, lower.tail = TRUE)
+cdf(X, 1, lower.tail = FALSE)
+## all methods above can either be applied elementwise or for
+## all combinations of X and x, if length(X) = length(x),
+## also the result can be assured to be a matrix via drop = FALSE
+p <- c(0.05, 0.5, 0.95)
+quantile(X, p, elementwise = FALSE)
+quantile(X, p, elementwise = TRUE)
+quantile(X, p, elementwise = TRUE, drop = FALSE)
+## compare theoretical and empirical mean from 1,000 simulated observations
+cbind(
+"theoretical" = mean(X),
+"empirical" = rowMeans(random(X, 1000))
+)
+```
+
+## 4. A Case for Beta Regression in the Natural Sciences
+
+#### https://esajournals.onlinelibrary.wiley.com/doi/epdf/10.1002/ecs2.3940
+
+The article discusses the applicability and advantages of using beta regression models in natural sciences.
+
+-   This type of data is common in fields like ecology, biology, and environmental sciences due to its ability to handle bounded data and provide more accurate and interpretable results than traditional linear models. It highlights the flexibility and robustness of beta regression for handling diverse natural phenomena that result in proportion-based data.
+
+-   In natural sciences, many variables are naturally bounded between 0 and 1, such as proportion of land cover, survival rates, or species occurrence.
+
+-   Beta regression is well-suited for modeling these types of variables because it allows the mean response to vary with explanatory variables while adjusting for the precision parameter.
+
+## 5. An Introduction to Regression Analysis
+
+#### https://chicagounbound.uchicago.edu/cgi/viewcontent.cgi?article=1050&context=law_and_economics
+
+The paper gives an overview of the principles of regression analysis, a statistical tool used to explore relationships between variables. Regression analysis is vital in determining causal effects, such as how changes in one variable affect another variable. The paper discusses both simple and multiple regression models, the assumptions underlying these models, and potential issues like omitted variables and multicollinearity.
+
+-   The paper explains simple regression, which deals with one independent variable, and multiple regression, which involves several independent variables. Both types estimate the quantitative effect of independent variables on a dependent variable.
+
+-   Hypothesis testing and t-statistics are explained to assess the significance of regression coefficients.
+
+-   R² is measures the proportion of variance in the dependent variable that can be explained by the independent variables in a regression model. It tells how well the model fits the data.
+
+-   If the model is used for prediction, a higher R² implies that the model can more accurately predict future outcomes based on the given data.
+
+-   A model can have a high R² but still be flawed due to issues like multicollinearity or omitted variables.
+
+## 6. Beta Regression in R
+
+#### www.jstatsoft.org/index.php/jss/article/download/v034i02/378
+
+#### -\> Relevant resource: https://rcompanion.org/handbook/J_02.html
+
+The paper introduces the **betareg** package in R, which allows users to perform both fixed and variable dispersion beta regression. The model is based on the beta distribution, using a parameterization with the mean and precision.
+
+-   The mean of the beta distribution is related to explanatory variables using a linear predictor, while precision can also be modeled with different link functions.
+
+-   Fixed dispersion assumes constant precision, while variable dispersion models allow precision to depend on other covariates.
+
+-   optim() is called for maximizing the likelihood
+
+-   The model-fitting function betareg() and its associated class are designed to be as similar as possible to the standard glm() function
+
+**Example in R**
+
+Prater’s gasoline yield data was used by Ferrari and Cribari-Neto (2004) to illustrate the application of beta regression. The response variable, yield, represents the proportion of crude oil converted to gasoline. Two explanatory variables were used: temp, the temperature at which all gasoline vaporized, and batch, representing ten distinct experimental conditions. Using a logit link, the beta regression model shows the relationship between yield and the predictors.
+
+Figure 2: Diagnostic plots for beta regression model gy2
+
+As observation 4 corresponds to a large Cook’s distance and large residual, Ferrari and Cribari-Neto (2004) decided to refit the model excluding this observation.
+
+```{r}
+# Load the package and data
+library(betareg)
+data("GasolineYield", package = "betareg")
+
+## Ferrari and Cribari-Neto (2004)
+gy2 <- betareg(yield ~ batch + temp, data = GasolineYield)
+## Table 1
+summary(gy2)
+## Figure 2
+par(mfrow = c(3, 2))
+plot(gy2, which = 1, type = "pearson", sub.caption = "")
+plot(gy2, which = 1, type = "deviance", sub.caption = "")
+plot(gy2, which = 5, type = "deviance", sub.caption = "")
+plot(gy2, which = 4, type = "pearson", sub.caption = "")
+plot(gy2, which = 2:3)
+par(mfrow = c(1, 1))
+
+## exclude 4th observation
+gy2a <- update(gy2, subset = -4)
+gy2a
+summary(gy2a)
+## IGNORE_RDIFF_END
+```
