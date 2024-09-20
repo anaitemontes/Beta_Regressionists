@@ -1,0 +1,99 @@
+---
+title: "Literature Review of Beta Regression"
+author: "Anaite Montes Bu"
+format:
+  html:
+    toc: true
+    self-contained: true
+    css: custom.css
+    html-math-method: katex
+bibliography: references.bib
+csl: ieee.csl
+execute:
+  warning: false
+  message: false
+---
+
+## Introduction
+
+Regression analysis is a statistical tool used to explore relationships between variables. It is vital in determining causal effects, such as how changes in one variable affect another variable. Beta regression is specifically designed to handle continuous response variables confined within the open interval (0, 1), making it suitable for rates, proportions, and bounded data. This model offers a flexible approach by allowing the mean response and variability to be modeled as functions of covariates. This review synthesizes key literature on beta regression models, including their theoretical foundations, extensions, and applications, particularly through the R package betareg.
+
+## Methods
+
+The core structure of the beta regression model assumes that the response variable follows a beta distribution. The mean (μ) and precision (ϕ) of the beta distribution are modeled as functions of covariates through link functions. The model's flexibility stems from its ability to accommodate varying shapes of the distribution by adjusting these parameters.
+
+#### Mean Equation
+
+The mean **(μ)** of the beta distribution is linked to the covariates **(**$x_i$**)** through a link function **(**$g(\cdot)$**)**:
+
+$$
+g(\mu_i) = \eta_i = x_i^\top \beta
+$$
+
+Where:\
+- **(**$x_i$**)** is the vector of covariates, **(**$\beta$**)** is the vector of regression coefficients, **(**$g(\cdot)$**)** is a link function (e.g., the logit link).
+
+#### Precision Equation
+
+The precision parameter **(**$\phi_i$**)** can also be modeled using covariates **(**$z_i$**)** with a link function ($h(\cdot)$):
+
+$$
+h(\phi_i) = \zeta_i = z_i^\top \gamma
+$$
+
+Where:\
+- **(**$z_i$**)** is a vector of covariates, **γ** is the vector of coefficients for the precision model, **h()** is typically the log link or identity link.
+
+#### Beta Distribution Likelihood
+
+The likelihood function for the beta regression model is based on the beta distribution:
+
+$$
+f(y; \mu, \phi) = \frac{\Gamma(\phi)}{\Gamma(\mu \phi) \Gamma((1 - \mu)\phi)} y^{\mu\phi - 1}(1 - y)^{(1 - \mu)\phi - 1}, \quad 0 < y < 1
+$$
+
+Where:\
+- **(μ)** is the mean, **(ϕ)** is the precision (inverse of the variance), **(Γ)** is the gamma function.
+
+#### Variance of the Beta Distribution
+
+The variance of the beta distribution is given by:
+
+$$
+\text{Var}(Y) = \frac{\mu(1 - \mu)}{1 + \phi}
+$$
+
+## Analysis and Results
+
+Beta regression, introduced by Ferrari and Cribari-Neto [@Ferrari2004], provides a flexible approach by modeling both the mean and precision of the beta distribution. The mean of the response variable is linked to covariates through a link function, often the logit link, allowing for intuitive interpretation in terms of odds ratios. The precision parameter accounts for the variability in the data, enabling the model to adjust for non-constant variance.
+
+Beta regression trees offer another improvement by using recursive partitioning to model different subgroups in heterogeneous data, allowing distinct relationships between response and predictor variables to be captured.
+
+Lastly, latent class beta regression uses finite mixture models to handle unobserved heterogeneity, assigning observations to latent subgroups and estimating subgroup-specific relationships simultaneously, making it ideal for complex data structures [@Grun2012].
+
+While traditional beta regression is suitable for data strictly within the (0, 1) interval, real-world datasets often contain observations at the boundaries—i.e., values exactly at 0 or 1. To accommodate these boundary values, extended models such as zero-inflated or one-inflated beta regression have been developed [@Ferrari2004]. These models introduce a point mass component to handle the probability of observing values at the boundaries, allowing the beta distribution to be modified for these special cases.
+
+In R, the betareg package facilitates the implementation of both standard and extended beta regression models. It provides tools for fitting models with both fixed and variable dispersion, as well as handling boundary observations through extensions like the Beta01 distribution [@Cribari-Neto2010] [@Zeileis2004]. The beta regression models in betareg are designed to be similar in structure to generalized linear models (GLMs), making it accessible to users familiar with standard regression techniques.
+
+To illustrate the application of beta regression, consider the GasolineYield dataset, where the proportion of crude oil converted to gasoline is modeled as a function of temperature and batch conditions. Using beta regression, we can estimate how these factors influence gasoline yield. In this example, we use a logit link for the mean equation and estimate the precision parameter using a constant model. Diagnostic tools such as residual plots and Cook's distance are used to evaluate the model fit [@Ferrari2004].
+
+```{r}
+library(betareg)
+data("GasolineYield", package = "betareg")
+
+# Fit the beta regression model
+gy_model <- betareg(yield ~ batch + temp, data = GasolineYield)
+
+# Summary of the model
+summary(gy_model)
+
+# Diagnostic plots
+par(mfrow = c(2, 2))
+plot(gy_model)
+```
+
+## Conclusion
+
+Beta regression has proven a powerful tool for modeling continuous data restricted to the (0, 1) interval. With its ability to model both mean and precision, handle boundary observations, and accommodate latent heterogeneity, beta regression stands out as an essential method in various fields, from ecology to economics[@Geissinger2022]. Extensions such as bias correction and beta regression trees further enhance its applicability, making it a go-to choice for analysts dealing with proportion data. The betareg package in R facilitates easy implementation of these models, providing researchers with a flexible framework for statistical modeling.
+
+## References
