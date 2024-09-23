@@ -1,0 +1,145 @@
+---
+title: "Beta Regression"
+subtitle: "Team Bee (Beta Regressionists) (Advisor: Dr. Seals)"
+author: "Anaite Montes Bu, Travis Keep"
+editor: source
+format: 
+  revealjs: 
+    toc: true
+    theme: dark
+    self-contained: true
+    css: custom.css
+    html-math-method: katex
+bibliography: references1.bib
+csl: ieee.csl
+execute:
+  warning: false
+  message: false
+  error: false
+---
+
+## Introduction
+
+-   Regression analysis is a statistical tool used to explore relationships between variables.
+
+-   Beta Regression: When the dependent variable is a ratio or percentage.
+
+## Shortfalls of Normal Regression
+
+- Assumes dependent variable is normally distributed
+- Assumes variance is constant throughout
+
+Generally not true with ratios or percentages
+
+## When dependent variable lies in (0, 1)
+
+- True of ratios or percents such as test scores
+- Variance typically less near the extremes e.g 0 or 1.
+
+## Reading Skills data set
+
+- Reading skills based on IQ and if student has dyslexia N=44
+- Normal regression shows IQ alone not significant in predicting reading score
+- Beta regression shows IQ alone is significant in predicting reading score
+[@smithson2006]
+
+## Beta distribution
+
+$$
+f(y; \mu, \phi) = \frac{\Gamma(\phi)}{\Gamma(\mu \phi) \Gamma((1 - \mu)\phi)} y^{\mu\phi - 1}(1 - y)^{(1 - \mu)\phi - 1}, \quad 0 < y < 1
+$$
+Where:\
+- **(μ)** is the mean, **(ϕ)** is the precision (inverse of the variance), **(Γ)** is the gamma function.
+
+## Beta Distribution Variance
+
+$$
+\text{Var}(Y) = \frac{\mu(1 - \mu)}{1 + \phi}
+$$
+When $\mu$ is near the extremes, 0 or 1, variance drops. [@Ferrari2004]
+
+## Extended Beta Regression
+
+**Bias** **Correction/Reduction**
+- **Type** **of** **Estimator:**
+
+- ML (Maximum Likelihood): Standard method, useful but may yield biased estimates in certain conditions.[@Grun2012]
+- BC (Bias-Corrected): Adjusts estimates to correct for bias, providing more reliable parameter values.
+- BR (Bias-Reduced): Shrinks estimates towards a central value, which can improve predictive performance.
+
+## **Bias** **Correction/Reduction**
+
+```{r}
+library(betareg)
+library(readr)
+suicide_dataset <- read_csv("master.csv")
+
+max_suicide_rate <- max(suicide_dataset$`suicides/100k pop`, na.rm = TRUE)
+suicide_dataset$suicide_rate <- ifelse(suicide_dataset$`suicides/100k pop` == 0, 0.001,
+                                        ifelse(suicide_dataset$`suicides/100k pop` == max_suicide_rate, 0.999,
+                                               suicide_dataset$`suicides/100k pop` / max_suicide_rate))
+
+# Rename variables
+names(suicide_dataset)[names(suicide_dataset) == "HDI for year"] <- "HDI_year"
+names(suicide_dataset)[names(suicide_dataset) == "gdp_per_capita ($)"] <- "GDP_capita"
+
+# Remove rows with NA values
+suicide_dataset <- na.omit(suicide_dataset)
+
+# Mean model
+m1 <- suicide_rate ~ HDI_year + GDP_capita + sex + age + generation | HDI_year + GDP_capita
+
+# Fit beta regression models
+suicide_ml <- betareg(m1, data = suicide_dataset, type = "ML")
+suicide_bc <- betareg(m1, data = suicide_dataset, type = "BC")
+suicide_br <- betareg(m1, data = suicide_dataset, type = "BR")
+
+summary(suicide_bc)
+```
+
+
+## Beta Regression Trees
+
+-   This extension uses recursive partitioning to model data that might exhibit subgroup-specific relationships. 
+-   It builds decision trees by splitting data into different subgroups based on the instability of model parameters across partitioning variables.
+
+
+
+```{r}
+library(partykit)
+set.seed(123)
+
+# Randomly sample 20% of the data
+sample_indices <- sample(seq_len(nrow(suicide_dataset)), size = 0.2 * nrow(suicide_dataset))
+suicide_sample <- suicide_dataset[sample_indices, ]
+
+# Fit the model on the sample
+suicide_tree <- betatree(suicide_rate ~ HDI_year, 
+                         data = suicide_sample, 
+                         minsplit = 20,
+                         control = betatree.control(maxdepth = 3))
+
+# Plot the resulting tree
+plot(suicide_tree)
+```
+
+## Diagnostic Plots
+The package **betareg** allows users to perform both fixed and variable dispersion beta regression. The model is based on the beta distribution, using a parameterization with the mean and precision[@Zeileis2004].
+
+```{r}
+par(mfrow = c(2, 2))
+plot(suicide_bc)
+```
+
+
+
+## Conclusion
+
+-   Effective for proportion data, Ideal for modeling data bounded in the (0, 1) range.
+-   Models both mean and precision, managing boundary cases and latent heterogeneity.
+-   Bias correction and beta regression trees expand its capabilities.
+-   The betareg package in R offers a powerful, flexible framework for analysts.
+
+## References
+
+
