@@ -1,0 +1,18 @@
+---
+title: "Datasets Summary"
+author: "Anaite Montes Bu"
+format:
+  html:
+    toc: true
+    html-math-method: katex
+    css: styles.css
+---
+
+## Suicide Rates Overview 1985 to 2016
+
+This dataset provides an overview at suicide trends across various countries and demographic groups over a 31-year period. It includes variables such as the country, year, sex, and age group of the population, along with the raw count of suicides and the suicide rate. The dataset also includes socio-economic factors like the Human Development Index (HDI) for each year and country, as well as economic indicators such as GDP for the year and GDP per capita. The dataset also categorizes individuals into generational cohorts (e.g., Baby Boomers, Generation X) based on their age. This information allows for in-depth analysis of how suicide rates have changed over time, across different countries, and between demographic groups, while also considering the influence of socio-economic development and economic factors.
+
+## Cancer Rates
+-   Cancer Rates for Lake County Illinois
+
+The dataset provides cancer incidence rates per 100,000 people across various types of cancer. It includes colorectal cancer, which develops in the colon or rectum; lung cancer, which forms in the lung tissues; breast cancer, which originates in breast tissue; prostate cancer, affecting the tissues of the prostate; and urinary system cancer, which involves the organs responsible for producing and discharging urine, such as the kidneys and bladder. Additionally, the dataset covers all cancers, encompassing multiple cancer types, including but not limited to the cancers listed above. This comprehensive dataset allows for the comparison of cancer rates across different types and provides a broad understanding of cancer prevalence in various organs and systems.
