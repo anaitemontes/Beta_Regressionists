@@ -1,0 +1,102 @@
+---
+title: "Table1"
+subtitle: "Beta Regressionists"
+author: "Anaite Montes Bu"
+format: html
+editor: visual
+echo: false
+---
+
+<style type="text/css">
+.tg  {border-collapse:collapse;border-color:#ccc;border-spacing:0;}
+.tg td{background-color:#fff;border-color:#ccc;border-style:solid;border-width:0px;color:#333;
+  font-family:Arial, sans-serif;font-size:14px;overflow:hidden;padding:10px 5px;word-break:normal;}
+.tg th{background-color:#f0f0f0;border-color:#ccc;border-style:solid;border-width:0px;color:#333;
+  font-family:Arial, sans-serif;font-size:14px;font-weight:normal;overflow:hidden;padding:10px 5px;word-break:normal;}
+.tg .tg-cly1{text-align:left;vertical-align:middle}
+.tg .tg-d4ov{font-family:"Times New Roman", Times, serif !important;font-size:16px;font-weight:bold;text-align:left;
+  vertical-align:middle}
+.tg .tg-0lax{text-align:left;vertical-align:top}
+.tg .tg-8zwo{font-style:italic;text-align:left;vertical-align:top}
+</style>
+<table class="tg"><thead>
+  <tr>
+    <th class="tg-cly1" colspan="2">Table 1: Suicide Demographic and Economic Factors From 1985 to 2016</th>
+  </tr></thead>
+<tbody>
+  <tr>
+    <td class="tg-d4ov">Characteristic</td>
+    <td class="tg-d4ov">Overall (n=27820)</td>
+  </tr>
+  <tr>
+    <td class="tg-0lax"> year (mean (SD))</td>
+    <td class="tg-cly1">2001.26 (8.47)</td>
+  </tr>
+  <tr>
+    <td class="tg-0lax"> sex = male (%)   </td>
+    <td class="tg-cly1">13910 (50.0)</td>
+  </tr>
+  <tr>
+    <td class="tg-8zwo" colspan="2">  age   (%)                                   </td>
+  </tr>
+  <tr>
+    <td class="tg-0lax">     15-24 years</td>
+    <td class="tg-cly1">4642 (16.7)</td>
+  </tr>
+  <tr>
+    <td class="tg-0lax">     25-34 years </td>
+    <td class="tg-cly1">4642 (16.7)</td>
+  </tr>
+  <tr>
+    <td class="tg-0lax">     35-54 years</td>
+    <td class="tg-cly1">4642 (16.7)</td>
+  </tr>
+  <tr>
+    <td class="tg-0lax">     5-14 years</td>
+    <td class="tg-cly1">4610 (16.6)</td>
+  </tr>
+  <tr>
+    <td class="tg-0lax">     55-74 years</td>
+    <td class="tg-cly1">4642 (16.7)</td>
+  </tr>
+  <tr>
+    <td class="tg-0lax">     75+ years</td>
+    <td class="tg-cly1">4642 (16.7)</td>
+  </tr>
+  <tr>
+    <td class="tg-8zwo" colspan="2">    generation (%)                            </td>
+  </tr>
+  <tr>
+    <td class="tg-0lax">     Boomers    </td>
+    <td class="tg-cly1">4990 (17.9)</td>
+  </tr>
+  <tr>
+    <td class="tg-0lax">     G.I. Generation        </td>
+    <td class="tg-cly1">2744 ( 9.9)</td>
+  </tr>
+  <tr>
+    <td class="tg-0lax">     Generation X                </td>
+    <td class="tg-cly1">6408 (23.0)</td>
+  </tr>
+  <tr>
+    <td class="tg-0lax">     Generation Z                </td>
+    <td class="tg-cly1">1470 ( 5.3)</td>
+  </tr>
+  <tr>
+    <td class="tg-0lax">     Millenials                  </td>
+    <td class="tg-cly1">5844 (21.0)</td>
+  </tr>
+  <tr>
+    <td class="tg-0lax">     Silent                      </td>
+    <td class="tg-cly1">6364 (22.9)</td>
+  </tr>
+  <tr>
+    <td class="tg-0lax">  HDI_year (mean (SD))           </td>
+    <td class="tg-cly1">0.78 (0.09)</td>
+  </tr>
+  <tr>
+    <td class="tg-0lax">  GDP_capita (mean (SD)) </td>
+    <td class="tg-cly1">16866.46 (18887.58)</td>
+  </tr>
+</tbody></table>
+
