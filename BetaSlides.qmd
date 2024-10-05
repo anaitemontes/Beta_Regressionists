@@ -45,6 +45,38 @@ Generally not true with ratios or percentages
 
 ## Beta distribution
 
+The PDF of random variable with a beta distribution is as follows.
+
+$$
+f(y) = \begin{cases} 
+      \frac{y^{\alpha-1}(1-y)^{\beta-1}}{B(\alpha,\beta)}, & 0 \le y \le 1 \\
+      0, & \text{elsewhere}
+\end{cases}
+$$
+Where $B(\alpha,\beta) = \int_0^1 y^{\alpha-1}(1-y)^{\beta-1} \ dy = \frac{\Gamma(\alpha) \Gamma(\beta)}{\Gamma(\alpha+\beta)}.$
+
+$\alpha$ and $\beta$ are the shape variables where $\alpha > 0 \quad \beta > 0$.
+[@wackerly2002]
+
+## Beta Distribution Mean and Variance
+
+$$
+E[Y] = \mu = \frac{\alpha}{\alpha+\beta} \ \ \ \text{and} \ \ \ V[Y] = \sigma^2  = \frac{\alpha\beta}{(\alpha+\beta)^2(\alpha+\beta+1)}
+$$
+[@wackerly2002]
+
+## Introduction of $\mu$ and $\phi$
+
+For beta regression, it is useful to introduce the following
+
+$$
+\mu = \frac{\alpha}{\alpha+\beta} \\
+\phi = \alpha + \beta
+$$
+$\mu$ is the mean of the beta regression while the higher the $\phi$ the less the variance or the less spread out the PDF function is. [@ferrari2004]
+
+## Revised Beta Distribution
+
 $$
 f(y; \mu, \phi) = \frac{\Gamma(\phi)}{\Gamma(\mu \phi) \Gamma((1 - \mu)\phi)} y^{\mu\phi - 1}(1 - y)^{(1 - \mu)\phi - 1}, \quad 0 < y < 1
 $$
