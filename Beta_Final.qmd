@@ -1,0 +1,263 @@
+---
+title: "Beta Regression"
+subtitle: "Team Bee (Beta Regressionists) (Advisor: Dr. Seals)"
+author: "Anaite Montes Bu"
+editor: 
+  source: 
+    markdown: 
+      wrap: 72
+format: 
+  html: 
+    code-fold: true
+    toc: true
+    self-contained: true
+    css: custom.css
+    math-method: katex
+bibliography: references1.bib
+csl: ieee.csl
+execute: 
+  warning: false
+  message: false
+---
+
+## Background
+
+Regression analysis is a widely used statistical tool for examining the relationships between variables, particularly in exploring how changes in one variable influence another. It plays a crucial role in determining causal effects across numerous fields. Among the various types of regression models, beta regression is specifically designed to handle continuous response variables confined to the open interval (0, 1), making it suitable for modeling rates, proportions, and other bounded data. This model allows for flexibility by enabling both the mean response and the variability to be modeled as functions of covariates, making it ideal for bounded data.
+
+The beta regression model addresses challenges posed by traditional models when dealing with bounded outcomes and has been extended to accommodate heteroscedasticity, where variance depends on covariates. Implemented in statistical packages like betareg in R, this model has become a valuable tool for analyzing real-world data, particularly when response variables are restricted within a certain range.
+
+This paper synthesizes the literature on beta regression, including its theoretical foundations and practical applications. It also demonstrates beta regression's use with the Suicide Rates Overview 1985 to 2016 dataset, which covers suicide trends across multiple countries and demographic groups over a 31-year period. The dataset includes variables such as country, year, sex, age group, suicide rate, and socio-economic factors like GDP and the Human Development Index (HDI). By using beta regression, we aim to model the suicide rates, which are continuous and bounded between 0 and 1, as functions of socio-economic factors.
+
+The beta distribution, is characterized by the following probability density function (PDF) for a random variable:
+
+
+$$
+f(y) = \begin{cases} 
+      \frac{y^{\alpha-1}(1-y)^{\beta-1}}{B(\alpha,\beta)}, & 0 \le y \le 1 \\
+      0, & \text{elsewhere}
+\end{cases}
+$$ Where $B(\alpha,\beta) = \int_0^1 y^{\alpha-1}(1-y)^{\beta-1} \ dy = \frac{\Gamma(\alpha) \Gamma(\beta)}{\Gamma(\alpha+\beta)}.$
+
+**Theorem:**
+
+$$
+E[Y] = \mu = \frac{\alpha}{\alpha+\beta} \ \ \ \text{and} \ \ \ V[Y] = \sigma^2  = \frac{\alpha\beta}{(\alpha+\beta)^2(\alpha+\beta+1)}
+$$
+
+Here, α and β are shape parameters with α \> 0 and β \> 0. In the context of beta regression, the mean of the response variable is modeled by μ, and the dispersion is controlled by the precision parameter ϕ. The higher the value of ϕ, the lower the variance, leading to a more concentrated distribution around the mean.
+
+## Methods
+
+```{=html}
+<style type="text/css">
+.tg  {border-collapse:collapse;border-color:#ccc;border-spacing:0;}
+.tg td{background-color:#fff;border-color:#ccc;border-style:solid;border-width:0px;color:#333;
+  font-family:Arial, sans-serif;font-size:14px;overflow:hidden;padding:10px 5px;word-break:normal;}
+.tg th{background-color:#f0f0f0;border-color:#ccc;border-style:solid;border-width:0px;color:#333;
+  font-family:Arial, sans-serif;font-size:14px;font-weight:normal;overflow:hidden;padding:10px 5px;word-break:normal;}
+.tg .tg-cly1{text-align:left;vertical-align:middle}
+.tg .tg-d4ov{font-family:"Times New Roman", Times, serif !important;font-size:16px;font-weight:bold;text-align:left;
+  vertical-align:middle}
+.tg .tg-0lax{text-align:left;vertical-align:top}
+.tg .tg-8zwo{font-style:italic;text-align:left;vertical-align:top}
+</style>
+<table class="tg"><thead>
+  <tr>
+    <th class="tg-cly1" colspan="2">Table 1: Suicide Demographic and Economic Factors From 1985 to 2016</th>
+  </tr></thead>
+<tbody>
+  <tr>
+    <td class="tg-d4ov">Characteristic</td>
+    <td class="tg-d4ov">Overall (n=27820)</td>
+  </tr>
+  <tr>
+    <td class="tg-0lax"> year (mean (SD))</td>
+    <td class="tg-cly1">2001.26 (8.47)</td>
+  </tr>
+  <tr>
+    <td class="tg-0lax"> sex = male (%)   </td>
+    <td class="tg-cly1">13910 (50.0)</td>
+  </tr>
+  <tr>
+    <td class="tg-8zwo" colspan="2">  age   (%)                                   </td>
+  </tr>
+  <tr>
+    <td class="tg-0lax">     15-24 years</td>
+    <td class="tg-cly1">4642 (16.7)</td>
+  </tr>
+  <tr>
+    <td class="tg-0lax">     25-34 years </td>
+    <td class="tg-cly1">4642 (16.7)</td>
+  </tr>
+  <tr>
+    <td class="tg-0lax">     35-54 years</td>
+    <td class="tg-cly1">4642 (16.7)</td>
+  </tr>
+  <tr>
+    <td class="tg-0lax">     5-14 years</td>
+    <td class="tg-cly1">4610 (16.6)</td>
+  </tr>
+  <tr>
+    <td class="tg-0lax">     55-74 years</td>
+    <td class="tg-cly1">4642 (16.7)</td>
+  </tr>
+  <tr>
+    <td class="tg-0lax">     75+ years</td>
+    <td class="tg-cly1">4642 (16.7)</td>
+  </tr>
+  <tr>
+    <td class="tg-8zwo" colspan="2">    generation (%)                            </td>
+  </tr>
+  <tr>
+    <td class="tg-0lax">     Boomers    </td>
+    <td class="tg-cly1">4990 (17.9)</td>
+  </tr>
+  <tr>
+    <td class="tg-0lax">     G.I. Generation        </td>
+    <td class="tg-cly1">2744 ( 9.9)</td>
+  </tr>
+  <tr>
+    <td class="tg-0lax">     Generation X                </td>
+    <td class="tg-cly1">6408 (23.0)</td>
+  </tr>
+  <tr>
+    <td class="tg-0lax">     Generation Z                </td>
+    <td class="tg-cly1">1470 ( 5.3)</td>
+  </tr>
+  <tr>
+    <td class="tg-0lax">     Millenials                  </td>
+    <td class="tg-cly1">5844 (21.0)</td>
+  </tr>
+  <tr>
+    <td class="tg-0lax">     Silent                      </td>
+    <td class="tg-cly1">6364 (22.9)</td>
+  </tr>
+  <tr>
+    <td class="tg-0lax">  HDI_year (mean (SD))           </td>
+    <td class="tg-cly1">0.78 (0.09)</td>
+  </tr>
+  <tr>
+    <td class="tg-0lax">  GDP_capita (mean (SD)) </td>
+    <td class="tg-cly1">16866.46 (18887.58)</td>
+  </tr>
+</tbody></table>
+```
+
+
+## Analysis
+
+The Base Model models the mean as a function of covariates. The precision (ϕ) is assumed to be constant across all observations, meaning the variance is not influenced by any of the covariates.
+
+```{r, warning=F, echo=T, message=F}
+library(betareg)
+library(readr)
+
+# Load and clean the dataset
+suicide_dataset <- read_csv("master.csv")
+
+# Rescale suicide rates and handle 0s and 1s
+max_suicide_rate <- max(suicide_dataset$`suicides/100k pop`, na.rm = TRUE)
+suicide_dataset$suicide_rate <- ifelse(suicide_dataset$`suicides/100k pop` == 0, 0.001,
+                                        ifelse(suicide_dataset$`suicides/100k pop` == max_suicide_rate, 0.999,
+                                               suicide_dataset$`suicides/100k pop` / max_suicide_rate))
+
+# Rename 
+names(suicide_dataset)[names(suicide_dataset) == "HDI for year"] <- "HDI_year"
+names(suicide_dataset)[names(suicide_dataset) == "gdp_per_capita ($)"] <- "GDP_capita"
+
+# Remove NA
+suicide_dataset <- na.omit(suicide_dataset)
+
+base_formula <- suicide_rate ~ HDI_year + GDP_capita + sex + age + generation
+
+# Fit the base beta regression model
+m_base <- betareg(base_formula, data = suicide_dataset)
+
+# Summary of the base model
+summary(m_base)
+
+```
+
+**Extended** **Beta** **Regression**
+
+The Extended Model models both the mean and the precision as functions of covariates. It provides more flexibility by allowing the precision (or variance) to change depending on certain variables (HDI_year and GDP_capita). Bias correction and bias reduction techniques ensure more accurate inference by shrinking overly optimistic parameter estimates.
+
+```{r, warning=F, echo=T, message=F}
+m1 <- suicide_rate ~ HDI_year + GDP_capita + sex + age + generation | HDI_year + GDP_capita
+
+
+# Fit beta regression models
+suicide_ml <- betareg(m1, data = suicide_dataset, type = "ML")
+suicide_bc <- betareg(m1, data = suicide_dataset, type = "BC")
+suicide_br <- betareg(m1, data = suicide_dataset, type = "BR")
+
+summary(suicide_bc)
+```
+
+**Beta** **Regression** **Trees**
+
+```{r, warning=F, echo=T, message=F}
+library(partykit)
+set.seed(123)
+
+# Randomly sample 20% of the data
+sample_indices <- sample(seq_len(nrow(suicide_dataset)), size = 0.2 * nrow(suicide_dataset))
+suicide_sample <- suicide_dataset[sample_indices, ]
+
+# Fit the model on the sample
+suicide_tree <- betatree(suicide_rate ~ HDI_year, 
+                         data = suicide_sample, 
+                         minsplit = 20,
+                         control = betatree.control(maxdepth = 3))
+
+# Plot the resulting tree
+plot(suicide_tree)
+```
+
+The beta regression tree analysis highlights the significant role of HDI_year as a predictor of the dependent variable, with p-values consistently indicating strong relationships. Key thresholds (0.661, 0.759, 0.884, and 0.892) are crucial in determining different groupings, which significantly affect the outcomes. Higher values of HDI_year are generally associated with better outcomes, as indicated by increasing medians in the boxplots for nodes with elevated HDI_year values. Additionally, nodes with fewer observations (e.g., Node 3) display greater variability in the dependent variable, while nodes with larger sample sizes (e.g., Node 9) exhibit more consistent results.
+
+
+**Diagnostic** **Plots**
+
+```{r, warning=F, echo=T, message=F}
+par(mfrow = c(2, 2))
+plot(suicide_bc)
+```
+
+
+
+```{r, warning=F, echo=T, message=F}
+library(betareg)
+library(ggplot2)
+library(dplyr)
+
+# Fit the beta regression model using the bias-correction
+suicide_bc <- betareg(m1, data = suicide_dataset, type = "BC")
+
+new_data <- suicide_dataset %>%
+  select(HDI_year, GDP_capita, sex, age, generation) %>%
+  distinct()
+
+# new dataset
+new_data$predicted_rate <- predict(suicide_bc, newdata = new_data)
+
+# Visualize plot
+ggplot(new_data, aes(x = HDI_year, y = predicted_rate)) +
+  geom_point(alpha = 0.5) +  # Scatter points
+  geom_smooth(method = "loess", color = "blue", fill = "lightblue", se = TRUE) +  # Smooth line
+  labs(title = "Predicted Suicide Rates by HDI Year (Bias-Corrected)",
+       x = "Human Development Index (HDI) Year",
+       y = "Predicted Suicide Rate") +
+  theme_minimal()
+```
+
+The blue line shows a general upward trend in predicted suicide rates as the Human Development Index (HDI) year increases. This suggests that, higher HDI values are associated with higher suicide rates.
+There is a notable clustering of data points, particularly in the mid-range of the HDI (around 0.6 to 0.8). This indicates that there may be more observations (countries or regions) falling within this HDI range, which could reflect regional similarities or social conditions affecting suicide rates.  While higher HDI values correlate with increased predicted suicide rates, the analysis highlights the need to consider additional contextual factors that contribute to this trend.
+
+## Conclusion
+
+In both the base and extended beta regression models, HDI and GDP per capita show strong and significant associations with suicide rates. Higher HDI is linked to higher suicide rates, while higher GDP per capita is associated with lower rates. Males have significantly higher suicide rates than females, and age and generation groups show varying effects, with younger and older age groups, such as 5-14 years and 75+ years, having notably lower suicide rates compared to the middle age categories.
+
+The extended model improves on the base model by allowing the precision parameter (ϕ) to vary, showing that countries with higher HDI and GDP per capita have more consistent suicide rates (less variability). This model offers a slightly better fit with higher log-likelihood and pseudo R-squared values, indicating that it captures more complexity in the data.
+
+## References
