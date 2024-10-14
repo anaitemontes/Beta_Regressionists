@@ -3128,7 +3128,7 @@ window.Quarto = {
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
 <h1 class="title">Beta Regression</h1>
-<p class="subtitle lead">Team Bee (Beta Regressionists) (Advisor: Dr. Seals)</p>
+<p class="subtitle lead">Beta Regressionists</p>
 </div>
 
 
@@ -3171,6 +3171,8 @@ E[Y] = \mu = \frac{\alpha}{\alpha+\beta} \ \ \ \text{and} \ \ \ V[Y] = \sigma^2 
 </section>
 <section id="methods" class="level2">
 <h2 class="anchored" data-anchor-id="methods">Methods</h2>
+<p>In this paper, we modeled suicide rates using beta regression, a specialized form of regression suitable for response variables that are bounded between 0 and 1. Since suicide rates are proportions (number of suicides per population) and fall within this range, traditional linear regression may not be appropriate due to potential violations of key assumptions, such as constant variance of the residuals. Beta regression, on the other hand, is designed to handle these challenges by accounting for the distribution and nature of the response variable.</p>
+<p>The analysis used the ‘Suicide Rates Overview 1985 to 2016’ dataset, which includes variables such as Human Development Index (HDI), GDP per capita, sex, age group, and generation. A comprehensive overview of the demographic and economic factors related to suicide rates is summarized in Table 1. This information is crucial for understanding the context of the variables we examined in our beta regression model.</p>
 <style type="text/css">
 .tg {border-collapse:collapse;border-color:#ccc;border-spacing:0;}
 .tg td{background-color:#fff;border-color:#ccc;border-style:solid;border-width:0px;color:#333;
@@ -3267,6 +3269,8 @@ vertical-align:middle}
 </tr>
 </tbody>
 </table>
+<p>The dependent variable, suicide rate, was modeled as a function of these socio-economic factors, with interaction terms considered where relevant. The beta regression was implemented with varying precision (phi) to account for differences in the variance of suicide rates. This allowed us to explore not only the relationship between predictors and the expected value of the suicide rate but also the precision of these predictions across different subgroups.</p>
+<p>Data management and analysis were performed using R (pending citation). The dataset was pre-processed to address missing values, ensuring a complete dataset for analysis. Descriptive statistics were calculated to summarize key characteristics, such as means and standard deviations for continuous variables and counts and percentages for categorical variables. We modeled suicide rates as a function of socio-economic factors including HDI, GDP per capita, sex, age group, and generation. Extended beta regression techniques were employed to analyze the relationship between these predictors and the suicide rate, incorporating bias correction and reduction strategies to enhance model accuracy. Additionally, beta regression trees were utilized to capture potential nonlinear relationships within the data while still accounting for the bounded nature of the response variable. To evaluate model performance, we reported the pseudo R-squared value, a common measure for beta regression models.</p>
 </section>
 <section id="analysis" class="level2">
 <h2 class="anchored" data-anchor-id="analysis">Analysis</h2>

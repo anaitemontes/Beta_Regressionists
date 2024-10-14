@@ -1,6 +1,6 @@
 ---
 title: "Beta Regression"
-subtitle: "Team Bee (Beta Regressionists) (Advisor: Dr. Seals)"
+subtitle: "Beta Regressionists"
 author: "Anaite Montes Bu"
 editor: 
   source: 
@@ -30,7 +30,6 @@ This paper synthesizes the literature on beta regression, including its theoreti
 
 The beta distribution, is characterized by the following probability density function (PDF) for a random variable:
 
-
 $$
 f(y) = \begin{cases} 
       \frac{y^{\alpha-1}(1-y)^{\beta-1}}{B(\alpha,\beta)}, & 0 \le y \le 1 \\
@@ -47,6 +46,10 @@ $$
 Here, α and β are shape parameters with α \> 0 and β \> 0. In the context of beta regression, the mean of the response variable is modeled by μ, and the dispersion is controlled by the precision parameter ϕ. The higher the value of ϕ, the lower the variance, leading to a more concentrated distribution around the mean.
 
 ## Methods
+
+In this paper, we modeled suicide rates using beta regression, a specialized form of regression suitable for response variables that are bounded between 0 and 1. Since suicide rates are proportions (number of suicides per population) and fall within this range, traditional linear regression may not be appropriate due to potential violations of key assumptions, such as constant variance of the residuals. Beta regression, on the other hand, is designed to handle these challenges by accounting for the distribution and nature of the response variable.
+
+The analysis used the 'Suicide Rates Overview 1985 to 2016' dataset, which includes variables such as Human Development Index (HDI), GDP per capita, sex, age group, and generation. A comprehensive overview of the demographic and economic factors related to suicide rates is summarized in Table 1. This information is crucial for understanding the context of the variables we examined in our beta regression model.
 
 ```{=html}
 <style type="text/css">
@@ -142,7 +145,9 @@ Here, α and β are shape parameters with α \> 0 and β \> 0. In the context of
   </tr>
 </tbody></table>
 ```
+The dependent variable, suicide rate, was modeled as a function of these socio-economic factors, with interaction terms considered where relevant. The beta regression was implemented with varying precision (phi) to account for differences in the variance of suicide rates. This allowed us to explore not only the relationship between predictors and the expected value of the suicide rate but also the precision of these predictions across different subgroups.
 
+Data management and analysis were performed using R (pending citation). The dataset was pre-processed to address missing values, ensuring a complete dataset for analysis. Descriptive statistics were calculated to summarize key characteristics, such as means and standard deviations for continuous variables and counts and percentages for categorical variables. We modeled suicide rates as a function of socio-economic factors including HDI, GDP per capita, sex, age group, and generation. Extended beta regression techniques were employed to analyze the relationship between these predictors and the suicide rate, incorporating bias correction and reduction strategies to enhance model accuracy. Additionally, beta regression trees were utilized to capture potential nonlinear relationships within the data while still accounting for the bounded nature of the response variable. To evaluate model performance, we reported the pseudo R-squared value, a common measure for beta regression models.
 
 ## Analysis
 
@@ -216,15 +221,12 @@ plot(suicide_tree)
 
 The beta regression tree analysis highlights the significant role of HDI_year as a predictor of the dependent variable, with p-values consistently indicating strong relationships. Key thresholds (0.661, 0.759, 0.884, and 0.892) are crucial in determining different groupings, which significantly affect the outcomes. Higher values of HDI_year are generally associated with better outcomes, as indicated by increasing medians in the boxplots for nodes with elevated HDI_year values. Additionally, nodes with fewer observations (e.g., Node 3) display greater variability in the dependent variable, while nodes with larger sample sizes (e.g., Node 9) exhibit more consistent results.
 
-
 **Diagnostic** **Plots**
 
 ```{r, warning=F, echo=T, message=F}
 par(mfrow = c(2, 2))
 plot(suicide_bc)
 ```
-
-
 
 ```{r, warning=F, echo=T, message=F}
 library(betareg)
@@ -251,8 +253,7 @@ ggplot(new_data, aes(x = HDI_year, y = predicted_rate)) +
   theme_minimal()
 ```
 
-The blue line shows a general upward trend in predicted suicide rates as the Human Development Index (HDI) year increases. This suggests that, higher HDI values are associated with higher suicide rates.
-There is a notable clustering of data points, particularly in the mid-range of the HDI (around 0.6 to 0.8). This indicates that there may be more observations (countries or regions) falling within this HDI range, which could reflect regional similarities or social conditions affecting suicide rates.  While higher HDI values correlate with increased predicted suicide rates, the analysis highlights the need to consider additional contextual factors that contribute to this trend.
+The blue line shows a general upward trend in predicted suicide rates as the Human Development Index (HDI) year increases. This suggests that, higher HDI values are associated with higher suicide rates. There is a notable clustering of data points, particularly in the mid-range of the HDI (around 0.6 to 0.8). This indicates that there may be more observations (countries or regions) falling within this HDI range, which could reflect regional similarities or social conditions affecting suicide rates. While higher HDI values correlate with increased predicted suicide rates, the analysis highlights the need to consider additional contextual factors that contribute to this trend.
 
 ## Conclusion
 
