@@ -163,6 +163,89 @@ par(mfrow = c(2, 2))
 plot(suicide_bc)
 ```
 
+## Reading Skills Test Data Set
+- 44 children
+- 19 dyslexic / 25 normal
+- Test scores range from 0.0 to 1.0
+
+## Reading Skills Data Set Regressors
+- IQ (Z-score) 
+  - Min -1.745
+  - Median -0.122
+  - Max 1.856
+- Dyslexia
+  - Yes
+  - No
+  
+## Readking Skills Dataset Tweaking
+- Dyslexia
+  - No -> -0.5
+  - Yes -> 0.5
+- Reading Score
+  - 1.0 -> 0.99 
+
+Remember dependent variable is in open interval (0, 1)
+
+## Beta Regression Fitting
+~~~
+betareg(
+  formula = accuracy ~ dcode * iq,
+  data = ReadingSkillsModel,
+  type = "BC",
+)
+~~~
+
+- Phi modeled as constant for higher psuedo $R^2$
+- BC is Bias Correction
+
+## General Linear Regression
+~~~
+glm(
+  formula = accuracy ~ dcode * iq,
+  family = gaussian(link = "logit"), 
+  data = ReadingSkillsModel,
+)
+~~~
+
+- logit maps (0, 1) to $\mathbb{R}$
+
+## Results for Normal Children
+
+```{r}
+library(betareg)
+library(dplyr)
+library(magrittr)
+library(ggplot2)
+
+data("ReadingSkills")
+
+ReadingSkillsModel <- ReadingSkills %>% mutate(dcode=ifelse(dyslexia == "no", -0.5, 0.5))
+
+model <- betareg(accuracy ~ dcode*iq, data=ReadingSkillsModel, type="BC")
+linmodel <- glm(accuracy ~ dcode*iq, family=gaussian(link="logit"), data=ReadingSkillsModel)
+
+dyslexiaModel <- ReadingSkillsModel %>% filter(dyslexia == "yes")
+normalModel <- ReadingSkillsModel %>% filter(dyslexia == "no")
+
+ggplot() + geom_point(aes(x=normalModel$iq, y=normalModel$accuracy), color="red") +
+geom_line(aes(x=normalModel$iq, y=predict(model, newdata=normalModel), color="beta")) +
+geom_line(aes(x=normalModel$iq, y=plogis(predict(linmodel, newdata=normalModel)), color="glm")) +
+xlab("IQ (Z-score)") + ylab("Score") + ggtitle("Score by IQ for normal students") +
+scale_color_manual(name="Regression Model", breaks=c("beta", "glm"), values=c("beta"="red", "glm"="green"))
+```
+
+
+## Results for Dyslexic Children
+
+```{r}
+ggplot() + geom_point(aes(x=dyslexiaModel$iq, y=dyslexiaModel$accuracy), color="blue") + 
+geom_line(aes(x=dyslexiaModel$iq, y=predict(model, newdata=dyslexiaModel), color="beta")) +
+geom_line(aes(x=dyslexiaModel$iq, y=plogis(predict(linmodel, newdata=dyslexiaModel)), color="glm")) +
+xlab("IQ (Z-score)") + ylab("Score") + ggtitle("Score by IQ for dyslexic students") +
+scale_color_manual(name="Regression Model", breaks=c("beta", "glm"), values=c("beta"="blue", "glm"="green"))
+```
+
+
 
 
 ## Conclusion
