@@ -163,7 +163,133 @@ par(mfrow = c(2, 2))
 plot(suicide_bc)
 ```
 
+## Reading Skills Test Data Set
+- 44 children
+- 19 dyslexic / 25 normal
+- Test scores range from 0.0 to 1.0
 
+## Reading Skills Data Set Regressors
+- IQ (Z-score) 
+  - Min -1.745
+  - Median -0.122
+  - Max 1.856
+- Dyslexia
+  - Yes
+  - No
+  
+## Reading Skills Dataset Tweaking
+- Dyslexia
+  - No -> 0.0
+  - Yes -> 1.0
+- Reading Score
+  - 1.0 -> 0.99 
+
+Remember dependent variable is in open interval (0, 1)
+
+## Beta Regression Fitting
+~~~
+betareg(
+  formula = accuracy ~ dcode * iq,
+  data = ReadingSkillsModel,
+  type = "BC",
+)
+~~~
+
+- Phi modeled as constant for higher psuedo $R^2$
+- BC is Bias Correction
+
+## General Linear Regression
+~~~
+glm(
+  formula = accuracy ~ dcode * iq,
+  family = gaussian(link = "logit"), 
+  data = ReadingSkillsModel,
+)
+~~~
+
+- logit maps (0, 1) to $\mathbb{R}$
+
+## Data Cleaning
+
+A point is extreme and removed if
+
+- Cooks Distance > 4 / N OR
+- Leverage > 2P / N. P is rank of model OR
+- Residual > 3 standard deviations
+
+## Results for Normal Children
+
+```{r}
+library(betareg)
+library(dplyr)
+library(magrittr)
+library(ggplot2)
+
+data("ReadingSkills")
+
+ReadingSkillsModel <- ReadingSkills %>% mutate(dcode=ifelse(dyslexia == "no", 0.0, 1.0))
+
+model <- betareg(accuracy ~ dcode*iq, data=ReadingSkillsModel, type="BC")
+
+#Identify influential points
+cooks_dist <- cooks.distance(model)
+leverage <- hatvalues(model)
+residuals <- residuals(model, type = "pearson")
+
+# Set thresholds
+cooks_threshold <- 4 / nrow(ReadingSkillsModel)
+leverage_threshold <- 2 * (length(coef(model)) / nrow(ReadingSkillsModel))
+residual_threshold <- 3
+
+#Identify extreme points
+extreme_points <- which(cooks_dist > cooks_threshold |
+                        leverage > leverage_threshold |
+                        abs(residuals) > residual_threshold)
+
+ReadingSkillsModel.cleaned <- ReadingSkillsModel[-extreme_points, ]
+
+model <- betareg(accuracy ~ dcode*iq, data=ReadingSkillsModel.cleaned, type="BC")
+linmodel <- glm(accuracy ~ dcode*iq, family=gaussian(link="logit"), data=ReadingSkillsModel.cleaned)
+
+dyslexiaModel <- ReadingSkillsModel.cleaned %>% filter(dyslexia == "yes")
+normalModel <- ReadingSkillsModel.cleaned %>% filter(dyslexia == "no")
+
+ggplot() + geom_point(aes(x=normalModel$iq, y=normalModel$accuracy), color="red") +
+geom_line(aes(x=normalModel$iq, y=predict(model, newdata=normalModel), color="beta")) +
+geom_line(aes(x=normalModel$iq, y=plogis(predict(linmodel, newdata=normalModel)), color="glm")) +
+xlab("IQ (Z-score)") + ylab("Score") + ggtitle("Score by IQ for normal students") +
+scale_color_manual(name="Regression Model", breaks=c("beta", "glm"), values=c("beta"="red", "glm"="green"))
+```
+
+
+## Results for Dyslexic Children
+
+```{r}
+ggplot() + geom_point(aes(x=dyslexiaModel$iq, y=dyslexiaModel$accuracy), color="blue") + 
+geom_line(aes(x=dyslexiaModel$iq, y=predict(model, newdata=dyslexiaModel), color="beta")) +
+geom_line(aes(x=dyslexiaModel$iq, y=plogis(predict(linmodel, newdata=dyslexiaModel)), color="glm")) +
+xlab("IQ (Z-score)") + ylab("Score") + ggtitle("Score by IQ for dyslexic students") +
+scale_color_manual(name="Regression Model", breaks=c("beta", "glm"), values=c("beta"="blue", "glm"="green"))
+```
+
+## Dyslexia's effect on scores
+
+A child's odds of answering a reading skills question correctly decreases by a
+factor of $e^{2.277}$ if they are dyslexic assuming normal IQ.
+
+## IQ's effect on scores
+
+If a normal child's IQ increases by 1 standard deviation, their odds of
+answering a reading skills question correctly increases by a factor of
+$e^{0.3205}$
+
+## IQ's effect on scores cont'd
+
+If a dyslexic child's IQ increases by 1 standard deviation, their odds of
+answering a reading skills question correctly decreases by a factor of
+$e^{0.0532}$
+
+0.0532 = 0.3737 - 0.3205
 
 ## Conclusion
 
