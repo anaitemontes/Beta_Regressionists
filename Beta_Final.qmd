@@ -145,6 +145,8 @@ The analysis used the 'Suicide Rates Overview 1985 to 2016' dataset, which inclu
   </tr>
 </tbody></table>
 ```
+To ensure the robustness of our model, we identified and removed influential data points based on Cook’s distance, leverage, and residual analysis. Data points exceeding specific thresholds were excluded from the analysis. This cleaning process improved the model’s fit and reduced the impact of outliers on the results.
+
 The dependent variable, suicide rate, was modeled as a function of these socio-economic factors, with interaction terms considered where relevant. The beta regression was implemented with varying precision (phi) to account for differences in the variance of suicide rates. This allowed us to explore not only the relationship between predictors and the expected value of the suicide rate but also the precision of these predictions across different subgroups.
 
 Data management and analysis were performed using R (pending citation). The dataset was pre-processed to address missing values, ensuring a complete dataset for analysis. Descriptive statistics were calculated to summarize key characteristics, such as means and standard deviations for continuous variables and counts and percentages for categorical variables. We modeled suicide rates as a function of socio-economic factors including HDI, GDP per capita, sex, age group, and generation. Extended beta regression techniques were employed to analyze the relationship between these predictors and the suicide rate, incorporating bias correction and reduction strategies to enhance model accuracy. Additionally, beta regression trees were utilized to capture potential nonlinear relationships within the data while still accounting for the bounded nature of the response variable. To evaluate model performance, we reported the pseudo R-squared value, a common measure for beta regression models.
@@ -178,9 +180,8 @@ base_formula <- suicide_rate ~ HDI_year + GDP_capita + sex + age + generation
 # Fit the base beta regression model
 m_base <- betareg(base_formula, data = suicide_dataset)
 
-# Summary of the base model
+# Summarize base model
 summary(m_base)
-
 ```
 
 **Extended** **Beta** **Regression**
@@ -198,6 +199,7 @@ suicide_br <- betareg(m1, data = suicide_dataset, type = "BR")
 
 summary(suicide_bc)
 ```
+
 
 **Beta** **Regression** **Trees**
 
@@ -223,10 +225,41 @@ The beta regression tree analysis highlights the significant role of HDI_year as
 
 **Diagnostic** **Plots**
 
+
 ```{r, warning=F, echo=T, message=F}
 par(mfrow = c(2, 2))
-plot(suicide_bc)
+plot(suicide_bc, main = "Original Model Diagnostics")
+
+#Identify influential points
+cooks_dist <- cooks.distance(suicide_bc)
+leverage <- hatvalues(suicide_bc)
+residuals <- residuals(suicide_bc, type = "pearson")
+
+# Set thresholds
+cooks_threshold <- 4 / nrow(suicide_dataset)
+leverage_threshold <- 2 * (length(coef(suicide_bc)) / nrow(suicide_dataset))
+residual_threshold <- 3  
+
+#Identify extreme points
+extreme_points <- which(cooks_dist > cooks_threshold |
+                        leverage > leverage_threshold |
+                        abs(residuals) > residual_threshold)
+
+suicide_dataset_cleaned <- suicide_dataset[-extreme_points, ] #Remove extreme points 
+
+# Re-fit model
+suicide_bc_cleaned <- betareg(suicide_bc$formula, data = suicide_dataset_cleaned)
+
+#cleaned model
+par(mfrow = c(2, 2))
+plot(suicide_bc_cleaned, main = "Cleaned Model Diagnostics")
+par(mfrow = c(1, 1))  # Reset plot layout
+
+
 ```
+The diagnostic plots for the cleaned model indicate a significant improvement in the model's fit compared to the original model. The residuals in the cleaned model exhibit a more random pattern, fewer outliers, and a more consistent spread, suggesting that the model's assumptions are better met. Additionally, the Cook's distance plot reveals fewer influential data points, making the model more robust. The generalized leverage plot shows a more evenly distributed pattern of leverage points, reducing the influence of individual data points on the model. Finally, the residuals vs. linear predictor plot indicates a more consistent spread of residuals around the zero line, suggesting better adherence to the assumptions of linearity and homoscedasticity. Overall, the cleaned model provides a more reliable and accurate representation of the relationship between socio-economic factors and suicide rates.
+
+
 
 ```{r, warning=F, echo=T, message=F}
 library(betareg)
@@ -234,14 +267,14 @@ library(ggplot2)
 library(dplyr)
 
 # Fit the beta regression model using the bias-correction
-suicide_bc <- betareg(m1, data = suicide_dataset, type = "BC")
+suicide_bc_cleaned <- betareg(m1, data = suicide_dataset_cleaned, type = "BC")
 
-new_data <- suicide_dataset %>%
+new_data <- suicide_dataset_cleaned %>%
   select(HDI_year, GDP_capita, sex, age, generation) %>%
   distinct()
 
 # new dataset
-new_data$predicted_rate <- predict(suicide_bc, newdata = new_data)
+new_data$predicted_rate <- predict(suicide_bc_cleaned, newdata = new_data)
 
 # Visualize plot
 ggplot(new_data, aes(x = HDI_year, y = predicted_rate)) +
@@ -253,11 +286,186 @@ ggplot(new_data, aes(x = HDI_year, y = predicted_rate)) +
   theme_minimal()
 ```
 
-The blue line shows a general upward trend in predicted suicide rates as the Human Development Index (HDI) year increases. This suggests that, higher HDI values are associated with higher suicide rates. There is a notable clustering of data points, particularly in the mid-range of the HDI (around 0.6 to 0.8). This indicates that there may be more observations (countries or regions) falling within this HDI range, which could reflect regional similarities or social conditions affecting suicide rates. While higher HDI values correlate with increased predicted suicide rates, the analysis highlights the need to consider additional contextual factors that contribute to this trend.
+The blue line illustrates a non-linear relationship between the Human Development Index (HDI) year and predicted suicide rates. Initially, as HDI increases, predicted suicide rates exhibit a decreasing trend. However, beyond a certain threshold, this trend reverses, and higher HDI values are associated with a slight uptick in predicted suicide rates. This complex relationship suggests that while economic development is a significant factor influencing suicide rates, additional sociocultural and psychological factors may become more prominent at higher levels of development.
+
+
+## Results
+
+The base beta regression model identified several significant predictors of suicide rates, including HDI_year, GDP_capita, sex, age group, and generation. The extended beta regression model, which allows for varying precision based on HDI_year and GDP_capita, provided a slightly improved fit to understanding the relationship between these factors and suicide rates. While the overall trends remained consistent with the base model, the extended model offered greater flexibility and accuracy in predicting suicide rates across different levels of human development and economic prosperity. The non-linear relationship between HDI_year and predicted suicide rates, as visualized in the plot, further emphasizes the complex interplay of economic, social, and psychological factors influencing suicide risk.
+
+Table 2 presents the estimated coefficients and standard errors for both the base and extended beta regression models. The results highlight the significant impact of various socio-economic factors on suicide rates.
+
+```{=html}
+<style type="text/css">
+.tg  {border-collapse:collapse;border-spacing:0;}
+.tg td{border-color:black;border-style:solid;border-width:1px;font-family:Arial, sans-serif;font-size:14px;
+  overflow:hidden;padding:10px 5px;word-break:normal;}
+.tg th{border-color:black;border-style:solid;border-width:1px;font-family:Arial, sans-serif;font-size:14px;
+  font-weight:normal;overflow:hidden;padding:10px 5px;word-break:normal;}
+.tg .tg-2b7s{text-align:right;vertical-align:bottom}
+.tg .tg-5yqz{background-color:#D9D9D9;border-color:inherit;font-weight:bold;text-align:left;vertical-align:bottom}
+.tg .tg-7zrl{text-align:left;vertical-align:bottom}
+.tg .tg-j6zm{font-weight:bold;text-align:left;vertical-align:bottom}
+.tg .tg-0lax{text-align:left;vertical-align:top}
+</style>
+<table class="tg"><thead>
+  <tr>
+    <th class="tg-5yqz" colspan="5"><span style="font-weight:bold;background-color:#D9D9D9">Table 2. Impact of Socioeconomic Factors on Suicide Rates: Base and Bias-Corrected Models</span></th>
+  </tr></thead>
+<tbody>
+  <tr>
+    <td class="tg-7zrl"></td>
+    <td class="tg-j6zm" colspan="2"><span style="font-weight:bold">Beta Regression Base Model</span></td>
+    <td class="tg-j6zm" colspan="2"><span style="font-weight:bold">Bias Correction Beta Regression</span></td>
+  </tr>
+  <tr>
+    <td class="tg-j6zm"><span style="font-weight:bold">Variable</span></td>
+    <td class="tg-7zrl">Beta (SE)</td>
+    <td class="tg-7zrl">p-value</td>
+    <td class="tg-7zrl">Beta (SE)</td>
+    <td class="tg-7zrl">p-value</td>
+  </tr>
+  <tr>
+    <td class="tg-7zrl">Intercept</td>
+    <td class="tg-7zrl">-5.75 (0.121)</td>
+    <td class="tg-7zrl">&lt; 2e-16</td>
+    <td class="tg-7zrl">-5.49 (1.53)</td>
+    <td class="tg-7zrl">&lt; 2e-16</td>
+  </tr>
+  <tr>
+    <td class="tg-7zrl">HDI_year</td>
+    <td class="tg-7zrl">3.60 (0.160)</td>
+    <td class="tg-7zrl">&lt; 2e-16</td>
+    <td class="tg-7zrl">3.31 (2.03)</td>
+    <td class="tg-7zrl">&lt; 2e-16</td>
+  </tr>
+  <tr>
+    <td class="tg-7zrl">GDP_capita</td>
+    <td class="tg-7zrl">-6.4e-06 (6.44e-07)</td>
+    <td class="tg-7zrl">&lt; 2e-16</td>
+    <td class="tg-7zrl">-8.7e-06 (7.3e-07)</td>
+    <td class="tg-7zrl">&lt; 2e-16</td>
+  </tr>
+  <tr>
+    <td class="tg-7zrl">Sex (Male)</td>
+    <td class="tg-7zrl">0.81 (0.019)</td>
+    <td class="tg-7zrl">&lt; 2e-16</td>
+    <td class="tg-7zrl">0.82 (0.018)</td>
+    <td class="tg-7zrl">&lt; 2e-16</td>
+  </tr>
+  <tr>
+    <td class="tg-7zrl">Age 25-34 years</td>
+    <td class="tg-7zrl">0.084 (0.033)</td>
+    <td class="tg-7zrl">0.0099</td>
+    <td class="tg-7zrl">0.090 (0.032)</td>
+    <td class="tg-7zrl">0.0053</td>
+  </tr>
+  <tr>
+    <td class="tg-7zrl">Age 35-54 years</td>
+    <td class="tg-7zrl">0.070 (0.040)</td>
+    <td class="tg-7zrl">0.080</td>
+    <td class="tg-7zrl">0.086 (0.040)</td>
+    <td class="tg-7zrl">0.030</td>
+  </tr>
+  <tr>
+    <td class="tg-7zrl">Age 5-14 years</td>
+    <td class="tg-7zrl">-0.96 (0.046)</td>
+    <td class="tg-7zrl">&lt; 2e-16</td>
+    <td class="tg-7zrl">-0.96 (0.046)</td>
+    <td class="tg-7zrl">&lt; 2e-16</td>
+  </tr>
+  <tr>
+    <td class="tg-7zrl">Age 55-74 years</td>
+    <td class="tg-7zrl">-0.16 (0.053)</td>
+    <td class="tg-7zrl">0.0030</td>
+    <td class="tg-7zrl">-0.13 (0.053)</td>
+    <td class="tg-7zrl">0.011</td>
+  </tr>
+  <tr>
+    <td class="tg-7zrl">Age 75+ years</td>
+    <td class="tg-7zrl">-0.21 (0.060)</td>
+    <td class="tg-7zrl">0.00047</td>
+    <td class="tg-7zrl">-0.18 (0.060)</td>
+    <td class="tg-7zrl">0.0024</td>
+  </tr>
+  <tr>
+    <td class="tg-7zrl">G.I. Generation</td>
+    <td class="tg-7zrl">0.51 (0.048)</td>
+    <td class="tg-7zrl">&lt; 2e-16</td>
+    <td class="tg-7zrl">0.49 (0.048)</td>
+    <td class="tg-7zrl">&lt; 2e-16</td>
+  </tr>
+  <tr>
+    <td class="tg-7zrl">Generation X</td>
+    <td class="tg-7zrl">-0.22 (0.037)</td>
+    <td class="tg-7zrl">4.66E-09</td>
+    <td class="tg-7zrl">-0.21 (0.037)</td>
+    <td class="tg-7zrl">9.60E-09</td>
+  </tr>
+  <tr>
+    <td class="tg-7zrl">Generation Z</td>
+    <td class="tg-7zrl">-0.49 (0.068)</td>
+    <td class="tg-7zrl">3.03E-13</td>
+    <td class="tg-7zrl">-0.56 (0.067)</td>
+    <td class="tg-7zrl">&lt; 2e-16</td>
+  </tr>
+  <tr>
+    <td class="tg-7zrl">Generation Millennials</td>
+    <td class="tg-7zrl">-0.42 (0.046)</td>
+    <td class="tg-7zrl">&lt; 2e-16</td>
+    <td class="tg-7zrl">-0.43 (0.046)</td>
+    <td class="tg-7zrl">&lt; 2e-16</td>
+  </tr>
+  <tr>
+    <td class="tg-7zrl">Generation Silent</td>
+    <td class="tg-7zrl">0.098 (0.037)</td>
+    <td class="tg-7zrl">0.0086</td>
+    <td class="tg-7zrl">0.091 (0.037)</td>
+    <td class="tg-7zrl">0.013</td>
+  </tr>
+  <tr>
+    <td class="tg-j6zm"><span style="font-weight:bold">Precision Model</span></td>
+    <td class="tg-7zrl"></td>
+    <td class="tg-7zrl"></td>
+    <td class="tg-7zrl"></td>
+    <td class="tg-7zrl"></td>
+  </tr>
+  <tr>
+    <td class="tg-7zrl">HDI_year</td>
+    <td class="tg-7zrl"></td>
+    <td class="tg-7zrl"></td>
+    <td class="tg-7zrl">0.64 (0.289)</td>
+    <td class="tg-7zrl">0.026</td>
+  </tr>
+  <tr>
+    <td class="tg-7zrl">GDP_capita</td>
+    <td class="tg-7zrl"></td>
+    <td class="tg-7zrl"></td>
+    <td class="tg-7zrl">8.31e-06 (1.15e-06)</td>
+    <td class="tg-7zrl">4.75E-13</td>
+  </tr>
+  <tr>
+    <td class="tg-j6zm"><span style="font-weight:bold">Model Fit</span></td>
+    <td class="tg-7zrl"></td>
+    <td class="tg-7zrl"></td>
+    <td class="tg-7zrl"></td>
+    <td class="tg-7zrl"></td>
+  </tr>
+  <tr>
+    <td class="tg-7zrl"><span style="font-weight:400;font-style:normal;color:#000">Pseudo R-squared</span></td>
+    <td class="tg-2b7s"><span style="font-weight:400;font-style:normal;color:#000">0.4623</span></td>
+    <td class="tg-7zrl"></td>
+    <td class="tg-2b7s"><span style="font-weight:400;font-style:normal;color:#000">0.4625</span></td>
+    <td class="tg-0lax"></td>
+  </tr>
+</tbody></table>
+```
+
+The extended model, by accounting for the varying precision of the response variable, provides a more refined understanding of the relationship between the predictors and suicide rates.
 
 ## Conclusion
 
-In both the base and extended beta regression models, HDI and GDP per capita show strong and significant associations with suicide rates. Higher HDI is linked to higher suicide rates, while higher GDP per capita is associated with lower rates. Males have significantly higher suicide rates than females, and age and generation groups show varying effects, with younger and older age groups, such as 5-14 years and 75+ years, having notably lower suicide rates compared to the middle age categories.
+In both the base and extended beta regression models, HDI and GDP per capita show strong and significant associations with suicide rates. Higher HDI is linked to higher suicide rates(correction pending), while higher GDP per capita is associated with lower rates. Males have significantly higher suicide rates than females, and age and generation groups show varying effects, with younger and older age groups, such as 5-14 years and 75+ years, having notably lower suicide rates compared to the middle age categories.
 
 The extended model improves on the base model by allowing the precision parameter (ϕ) to vary, showing that countries with higher HDI and GDP per capita have more consistent suicide rates (less variability). This model offers a slightly better fit with higher log-likelihood and pseudo R-squared values, indicating that it captures more complexity in the data.
 
