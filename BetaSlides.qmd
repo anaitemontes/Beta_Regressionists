@@ -163,7 +163,207 @@ par(mfrow = c(2, 2))
 plot(suicide_bc)
 ```
 
+## Reading Skills Test Data Set
+- 44 children
+- 19 dyslexic / 25 normal
+- Test scores range from 0.0 to 1.0
 
+## Reading Skills Data Set Regressors
+- IQ (Z-score) 
+  - Min -1.745
+  - Median -0.122
+  - Max 1.856
+- Dyslexia
+  - Yes
+  - No
+  
+## Reading Skills Dataset Tweaking
+- Dyslexia
+  - No -> 0.0
+  - Yes -> 1.0
+- Reading Score
+  - 1.0 -> 0.99 
+
+Remember dependent variable is in open interval (0, 1)
+
+## Beta Regression Fitting
+~~~
+betareg(
+  formula = accuracy ~ dcode * iq,
+  data = ReadingSkillsModel,
+  type = "BC",
+)
+~~~
+
+- Phi modeled as constant for higher psuedo $R^2$
+- BC is Bias Correction
+
+## General Linear Regression
+~~~
+glm(
+  formula = accuracy ~ dcode * iq,
+  family = gaussian(link = "logit"), 
+  data = ReadingSkillsModel,
+)
+~~~
+
+- logit maps (0, 1) to $\mathbb{R}$
+
+## Data Cleaning
+
+A point is extreme and removed if
+
+- Cooks Distance > 4 / N OR
+- Leverage > 2P / N. P is rank of model OR
+- Residual > 3 standard deviations
+
+## Results for Normal Children
+
+```{r}
+library(betareg)
+library(dplyr)
+library(magrittr)
+library(ggplot2)
+
+data("ReadingSkills")
+
+ReadingSkillsModel <- ReadingSkills %>% mutate(dcode=ifelse(dyslexia == "no", 0.0, 1.0))
+
+model <- betareg(accuracy ~ dcode*iq, data=ReadingSkillsModel, type="BC")
+
+#Identify influential points
+cooks_dist <- cooks.distance(model)
+leverage <- hatvalues(model)
+residuals <- residuals(model, type = "pearson")
+
+# Set thresholds
+cooks_threshold <- 4 / nrow(ReadingSkillsModel)
+leverage_threshold <- 2 * (length(coef(model)) / nrow(ReadingSkillsModel))
+residual_threshold <- 3
+
+#Identify extreme points
+extreme_points <- which(cooks_dist > cooks_threshold |
+                        leverage > leverage_threshold |
+                        abs(residuals) > residual_threshold)
+
+ReadingSkillsModel.cleaned <- ReadingSkillsModel[-extreme_points, ]
+
+model <- betareg(accuracy ~ dcode*iq, data=ReadingSkillsModel.cleaned, type="BC")
+linmodel <- glm(accuracy ~ dcode*iq, family=gaussian(link="logit"), data=ReadingSkillsModel.cleaned)
+
+dyslexiaModel <- ReadingSkillsModel.cleaned %>% filter(dyslexia == "yes")
+normalModel <- ReadingSkillsModel.cleaned %>% filter(dyslexia == "no")
+
+ggplot() + geom_point(aes(x=normalModel$iq, y=normalModel$accuracy), color="red") +
+geom_line(aes(x=normalModel$iq, y=predict(model, newdata=normalModel), color="beta")) +
+geom_line(aes(x=normalModel$iq, y=plogis(predict(linmodel, newdata=normalModel)), color="glm")) +
+xlab("IQ (Z-score)") + ylab("Score") + ggtitle("Score by IQ for normal students") +
+scale_color_manual(name="Regression Model", breaks=c("beta", "glm"), values=c("beta"="red", "glm"="green"))
+```
+
+
+## Results for Dyslexic Children
+
+```{r}
+ggplot() + geom_point(aes(x=dyslexiaModel$iq, y=dyslexiaModel$accuracy), color="blue") + 
+geom_line(aes(x=dyslexiaModel$iq, y=predict(model, newdata=dyslexiaModel), color="beta")) +
+geom_line(aes(x=dyslexiaModel$iq, y=plogis(predict(linmodel, newdata=dyslexiaModel)), color="glm")) +
+xlab("IQ (Z-score)") + ylab("Score") + ggtitle("Score by IQ for dyslexic students") +
+scale_color_manual(name="Regression Model", breaks=c("beta", "glm"), values=c("beta"="blue", "glm"="green"))
+```
+
+## Table 2
+
+```{r}
+model.summary <- summary(model)
+linmodel.summary <- summary(linmodel)
+
+model.coefs <- model.summary$coefficients$mean
+linmodel.coefs <- linmodel.summary$coefficients
+```
+
+<style type="text/css">
+.tg  {border-collapse:collapse;border-spacing:0;}
+.tg td{border-color:black;border-style:solid;border-width:1px;font-family:Arial, sans-serif;font-size:28px;
+  overflow:hidden;padding:10px 5px;word-break:normal;}
+.tg th{border-color:black;border-style:solid;border-width:1px;font-family:Arial, sans-serif;font-size:28px;
+  font-weight:normal;overflow:hidden;padding:10px 5px;word-break:normal;}
+.tg .tg-pb0m{border-color:inherit;text-align:center;vertical-align:bottom}
+.tg .tg-kg9c{background-color:#D9D9D9;border-color:inherit;text-align:left;vertical-align:top}
+.tg .tg-c3ow{border-color:inherit;text-align:center;vertical-align:top}
+.tg .tg-za14{border-color:inherit;text-align:left;vertical-align:bottom}
+.tg .tg-jkyp{border-color:inherit;text-align:right;vertical-align:bottom}
+</style>
+<table class="tg"><thead>
+  <tr>
+    <th class="tg-kg9c" colspan="7" rowspan="2">Table 2: Association of Reading Skills Score with IQ and presence of Dyslexia</th>
+  </tr>
+  <tr>
+  </tr></thead>
+<tbody>
+  <tr>
+    <td class="tg-c3ow" rowspan="2">Variable</td>
+    <td class="tg-pb0m" colspan="3">Beta Regression</td>
+    <td class="tg-pb0m" colspan="3">General Linear Regression</td>
+  </tr>
+  <tr>
+    <td class="tg-pb0m">β</td>
+    <td class="tg-pb0m">SE</td>
+    <td class="tg-pb0m">p</td>
+    <td class="tg-pb0m">β</td>
+    <td class="tg-pb0m">SE</td>
+    <td class="tg-pb0m">p</td>
+  </tr>
+  <tr>
+    <td class="tg-za14">Dyslexia</td>
+    <td class="tg-jkyp">`r sprintf('%0.4g', model.coefs['dcode', 1])`</td>
+    <td class="tg-jkyp">`r sprintf('%0.4g', model.coefs['dcode', 2])`</td>
+    <td class="tg-jkyp">`r sprintf('%0.4g', model.coefs['dcode', 4])`</td>
+    <td class="tg-jkyp">`r sprintf('%0.4g', linmodel.coefs['dcode', 1])`</td>
+    <td class="tg-jkyp">`r sprintf('%0.4g', linmodel.coefs['dcode', 2])`</td>
+    <td class="tg-jkyp">`r sprintf('%0.4g', linmodel.coefs['dcode', 4])`</td>
+  </tr>
+  <tr>
+    <td class="tg-za14">IQ (Z-score)</td>
+    <td class="tg-jkyp">`r sprintf('%0.4g', model.coefs['iq', 1])`</td>
+    <td class="tg-jkyp">`r sprintf('%0.4g', model.coefs['iq', 2])`</td>
+    <td class="tg-jkyp">`r sprintf('%0.4g', model.coefs['iq', 4])`</td>
+    <td class="tg-jkyp">`r sprintf('%0.4g', linmodel.coefs['iq', 1])`</td>
+    <td class="tg-jkyp">`r sprintf('%0.4g', linmodel.coefs['iq', 2])`</td>
+    <td class="tg-jkyp">`r sprintf('%0.4g', linmodel.coefs['iq', 4])`</td>
+  </tr>
+  <tr>
+    <td class="tg-za14">Dyslexia:iq</td>
+    <td class="tg-jkyp">`r sprintf('%0.4g', model.coefs['dcode:iq', 1])`</td>
+    <td class="tg-jkyp">`r sprintf('%0.4g', model.coefs['dcode:iq', 2])`</td>
+    <td class="tg-jkyp">`r sprintf('%0.4g', model.coefs['dcode:iq', 4])`</td>
+    <td class="tg-jkyp">`r sprintf('%0.4g', linmodel.coefs['dcode:iq', 1])`</td>
+    <td class="tg-jkyp">`r sprintf('%0.4g', linmodel.coefs['dcode:iq', 2])`</td>
+    <td class="tg-jkyp">`r sprintf('%0.4g', linmodel.coefs['dcode:iq', 4])`</td>
+  </tr>
+  <tr>
+  </tr>
+</tbody></table>
+<br><br>
+
+## Dyslexia's effect on scores
+
+A child's odds of answering a reading skills question correctly decreases by a
+factor of $e^{2.277}$ if they are dyslexic assuming normal IQ.
+
+## IQ's effect on scores
+
+If a normal child's IQ increases by 1 standard deviation, their odds of
+answering a reading skills question correctly increases by a factor of
+$e^{0.3205}$
+
+## IQ's effect on scores cont'd
+
+If a dyslexic child's IQ increases by 1 standard deviation, their odds of
+answering a reading skills question correctly decreases by a factor of
+$e^{0.0532}$
+
+0.0532 = 0.3737 - 0.3205
 
 ## Conclusion
 
