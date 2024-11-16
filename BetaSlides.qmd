@@ -215,15 +215,26 @@ The package **betareg** allows users to perform both fixed and variable dispersi
 
 ## Analysis - Reading Skills Dataset
 
-**Regressors**                **Dataset** **Tweaking**
+**Regressors**
 
--   IQ (Z-score)              -   Dyslexia
-    -   Min -1.745                -   No -\> 0.0
-    -   Median -0.122             -   Yes -\> 1.0
-    -   Max 1.856             -   Reading Score
--   Dyslexia                      -   1.0 -\> 0.99
+-   IQ (Z-score)
+    -   Min -1.745
+    -   Median -0.122
+    -   Max 1.856
+-   Dyslexia
     -   Yes
     -   No
+    
+## Analysis Cont'd
+
+**Dataset** **Tweaking**
+
+- Dyslexia
+  - No -\> 0.0
+  - Yes -\> 1.0
+
+- Reading Score
+  - 1.0 -\> 0.99
 
 Remember dependent variable is in open interval (0, 1)
 
