@@ -6,7 +6,7 @@ editor: source
 format: 
   revealjs: 
     toc: true
-    theme: sky
+    theme: beige
     self-contained: true
     css: custom.css
     html-math-method: katex
