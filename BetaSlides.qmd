@@ -221,7 +221,7 @@ suicide_tree <- betatree(suicide_rate ~ HDI_year,
                          control = betatree.control(maxdepth = 3))
 
 # Plot the resulting tree
-plot(suicide_tree)
+plot(suicide_tree, main = "Figure 1. Beta Regression Tree for Predicting Suicide Rate Based on HDI")
 ```
 
 
@@ -602,7 +602,22 @@ scale_color_manual(name="Regression Model", breaks=c("beta", "glm"), values=c("b
 
 ```
 
+## Results Cont'd
 
+-   Lower HDI values (≤ 0.661) associated with higher variability in suicide rates, indicating socio-economic instability.
+
+-   Higher HDI values (> 0.759) show lower, more stable suicide rates, suggesting better socio-economic conditions reduce suicide risk.
+
+- Initially, higher HDI leads to lower suicide rates, but at higher HDI levels, suicide rates slightly increase, highlighting complex influences beyond economic factors.
+Model Performance:
+
+## Results Cont'd
+
+**Model** **Performance**
+
+-   Base model: HDI, GDP, sex, age, and generation are significant predictors of suicide rates.
+
+-   Extended model (with varying precision): Slightly improved fit, capturing more complexity in socio-economic factors influencing suicide rates.
 
 
 ## Results - Reading Skills Dataset

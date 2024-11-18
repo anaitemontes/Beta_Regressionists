@@ -203,6 +203,8 @@ summary(suicide_bc)
 
 **Beta** **Regression** **Trees**
 
+The beta regression tree shown in Figure 1, titled "Beta Regression Tree for Predicting Suicide Rate Based on Human Development Index (HDI)", models the suicide rate as a function of the Human Development Index for a given year (HDI_year). This tree illustrates how different HDI_year thresholds impact the distribution of suicide rates across various population groups. 
+
 ```{r, warning=F, echo=T, message=F}
 library(partykit)
 set.seed(123)
@@ -218,10 +220,14 @@ suicide_tree <- betatree(suicide_rate ~ HDI_year,
                          control = betatree.control(maxdepth = 3))
 
 # Plot the resulting tree
-plot(suicide_tree)
+plot(suicide_tree, main = "Figure 1. Beta Regression Tree for Predicting Suicide Rate Based on HDI")
 ```
 
-The beta regression tree analysis highlights the significant role of HDI_year as a predictor of the dependent variable, with p-values consistently indicating strong relationships. Key thresholds (0.661, 0.759, 0.884, and 0.892) are crucial in determining different groupings, which significantly affect the outcomes. Higher values of HDI_year are generally associated with better outcomes, as indicated by increasing medians in the boxplots for nodes with elevated HDI_year values. Additionally, nodes with fewer observations (e.g., Node 3) display greater variability in the dependent variable, while nodes with larger sample sizes (e.g., Node 9) exhibit more consistent results.
+Each split in the tree represents a statistically significant threshold in HDI_year, as indicated by the associated p-values. The first major split at an HDI_year threshold of 0.884 (p < 0.001) partitions the data into two primary branches, where cases with HDI_year values less than or equal to 0.884 move left, and those with values greater than 0.884 move right. Additional splits occur at HDI_year thresholds of 0.661, 0.759, and 0.892, refining the groups further based on HDI levels that significantly differentiate the suicide rate distribution.
+
+Each terminal node (Nodes 3, 5, 6, 8, and 9) in the tree represents a unique subgroup defined by these HDI thresholds. Within each node, a box plot displays the distribution of suicide rates, with the sample size (n) shown below each plot. This hierarchical segmentation reveals how variations in HDI correlate with different suicide rate distributions, highlighting specific HDI thresholds associated with notable changes in the observed rates. Lower HDI values (e.g., nodes 3 and 5, where HDI ≤ 0.661 and 0.759) are associated with higher variability in suicide rates, indicating greater socio-economic instability or inequality within these populations. In contrast, nodes with higher HDI values (e.g., nodes 6, 8, and 9, where HDI > 0.759) show lower, more stable suicide rates, suggesting that improved socio-economic conditions are correlated with reduced suicide risk.
+
+The tree identifies specific HDI cutoffs, such as 0.661, 0.759, and 0.884, which may guide policymakers in targeting suicide prevention resources to regions with lower HDI, where suicide rates are higher and more variable. These findings align with existing research that links socio-economic factors to mental health outcomes, highlighting the potential impact of policies that improve HDI—such as investments in healthcare, education, and economic stability—on reducing suicide rates.
 
 **Diagnostic** **Plots**
 
