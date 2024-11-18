@@ -209,6 +209,8 @@ The beta regression tree shows HDI_year as a key predictor, with specific thresh
 
 ## Analysis Cont'd - Beta Regression Tree
 
+Figure 1. Beta Regression Tree for Predicting Suicide Rate Based on HDI
+
 ```{r}
 library(partykit)
 set.seed(123)
@@ -224,7 +226,7 @@ suicide_tree <- betatree(suicide_rate ~ HDI_year,
                          control = betatree.control(maxdepth = 3))
 
 # Plot the resulting tree
-plot(suicide_tree, main = "Figure 1. Beta Regression Tree for Predicting Suicide Rate Based on HDI")
+plot(suicide_tree)
 ```
 
 
@@ -611,8 +613,8 @@ scale_color_manual(name="Regression Model", breaks=c("beta", "glm"), values=c("b
 
 -   Higher HDI values (> 0.759) show lower, more stable suicide rates, suggesting better socio-economic conditions reduce suicide risk.
 
-- Initially, higher HDI leads to lower suicide rates, but at higher HDI levels, suicide rates slightly increase, highlighting complex influences beyond economic factors.
-Model Performance:
+-   Initially, higher HDI leads to lower suicide rates, but at higher HDI levels, suicide rates slightly increase, highlighting complex influences beyond economic factors.
+
 
 ## Results Cont'd
 
