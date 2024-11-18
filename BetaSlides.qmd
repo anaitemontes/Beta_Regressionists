@@ -52,7 +52,10 @@ $\alpha$ and $\beta$ are the shape variables where $\alpha > 0 \quad \beta > 0$.
 ## Beta Distribution Mean and Variance
 
 $$
-E[Y] = \mu = \frac{\alpha}{\alpha+\beta} \ \ \ \text{and} \ \ \ V[Y] = \sigma^2  = \frac{\alpha\beta}{(\alpha+\beta)^2(\alpha+\beta+1)}
+\begin{align}
+E[Y] &= \mu = \frac{\alpha}{\alpha+\beta} \\
+V[Y] &= \sigma^2  = \frac{\alpha\beta}{(\alpha+\beta)^2(\alpha+\beta+1)}
+\end{align}
 $$ [@wackerly2002]
 
 ## Introduction of $\mu$ and $\phi$
