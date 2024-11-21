@@ -5,8 +5,7 @@ author: "Anaite Montes Bu, Travis Keep"
 editor: source
 format: 
   revealjs: 
-    toc: true
-    theme: beige
+    theme: serif
     self-contained: true
     css: custom.css
     html-math-method: katex
@@ -89,51 +88,6 @@ $$
 
 -   Higher values of ϕ correspond to lower variance, indicating that observations are more precise around the mean in beta regression.
 
-
-## Extended Beta Regression
-
-**Bias** **Correction/Reduction** - **Type** **of** **Estimator:**
-
--   ML (Maximum Likelihood): Standard method, useful but may yield biased estimates in certain conditions.[@Grun2012]
-
--   BC (Bias-Corrected): Adjusts estimates to correct for bias, providing more reliable parameter values.
-
--   BR (Bias-Reduced): Shrinks estimates towards a central value, which can improve predictive performance.
-
-## Extended Beta Regression
-
-**Beta** **Regression** **Trees**
-
--   This extension uses recursive partitioning to model data that might exhibit subgroup-specific relationships.
-
--   It builds decision trees by splitting data into different subgroups based on the instability of model parameters across partitioning variables. 
-
-
-## Methods - Suicide Rates Dataset
-Model Approach:
-
--   Beta Regression was used to model suicide rates as a function of socio-economic factors, appropriate for data bounded between 0 and 1.
-
--   Dataset: Suicide Rates Overview 1985 to 2016, with variables like HDI, GDP per capita, sex, age group, and generation.
-
--   Cleaned data by removing outliers using **Cook’s distance** and **leverage** analysis.
-
--   Managed missing values and calculated descriptive statistics.
-
-## Methods Cont'd
-
-Model Details:
-
--   Incorporated interaction terms and adjusted precision (phi) to account for variance differences across groups.
-
--   Used beta regression trees to capture nonlinear relationships.
-
-Evaluation:
-
--   Model performance assessed via pseudo R-squared.
-
--   Software: R for data management and analysis.
-
 ## Methods - Reading Skills Dataset
 
 Model Rationale:
@@ -149,158 +103,8 @@ Data transformation:
 
 -   The response variable is scaled to (0, 1) and transformed using the logit function. The precision parameter (ϕ) is log-transformed and may vary by predictors like IQ and dyslexia status.
 
-## Analysis - Suicide Rates Dataset
 
-**Extended** **Beta** **Regression**
-
-```{r}
-library(betareg)
-library(readr)
-
-# Load and clean the dataset
-suicide_dataset <- read_csv("master.csv")
-
-# Rescale suicide rates and handle 0s and 1s
-max_suicide_rate <- max(suicide_dataset$`suicides/100k pop`, na.rm = TRUE)
-suicide_dataset$suicide_rate <- ifelse(suicide_dataset$`suicides/100k pop` == 0, 0.001,
-                                        ifelse(suicide_dataset$`suicides/100k pop` == max_suicide_rate, 0.999,
-                                               suicide_dataset$`suicides/100k pop` / max_suicide_rate))
-
-# Rename 
-names(suicide_dataset)[names(suicide_dataset) == "HDI for year"] <- "HDI_year"
-names(suicide_dataset)[names(suicide_dataset) == "gdp_per_capita ($)"] <- "GDP_capita"
-
-# Remove NA
-suicide_dataset <- na.omit(suicide_dataset)
-
-base_formula <- suicide_rate ~ HDI_year + GDP_capita + sex + age + generation
-
-# Fit the base beta regression model
-m_base <- betareg(base_formula, data = suicide_dataset)
-
-# code for BC model
-m1 <- suicide_rate ~ HDI_year + GDP_capita + sex + age + generation | HDI_year + GDP_capita
-
-suicide_bc <- betareg(m1, data = suicide_dataset, type = "BC")
-```
-Beta Regression Base Model:
-```         
-betareg(
-  formula = suicide_rate ~ HDI_year + GDP_capita + sex + age + generation,
-  data = suicide_dataset,
-)
-```
-Bias Corrected (BC) Model:
-```         
-betareg(
-  formula = suicide_rate ~ HDI_year + GDP_capita + sex + age + generation | HDI_year + GDP_capita,
-  data = suicide_dataset,
-  type = "BC",
-)
-```
-
-## Analysis Cont'd
-
-**Extended** **Beta** **Regression**
-
-**Beta** **Regression** **Trees:**
-
-The beta regression tree shows HDI_year as a key predictor, with specific thresholds creating groupings where higher HDI_year values link to better outcomes and smaller nodes show more variability.
-
-## Analysis Cont'd - Beta Regression Tree
-
-Figure 1. Beta Regression Tree for Predicting Suicide Rate Based on HDI
-
-```{r}
-library(partykit)
-set.seed(123)
-
-# Randomly sample 20% of the data
-sample_indices <- sample(seq_len(nrow(suicide_dataset)), size = 0.2 * nrow(suicide_dataset))
-suicide_sample <- suicide_dataset[sample_indices, ]
-
-# Fit the model on the sample
-suicide_tree <- betatree(suicide_rate ~ HDI_year, 
-                         data = suicide_sample, 
-                         minsplit = 20,
-                         control = betatree.control(maxdepth = 3))
-
-# Plot the resulting tree
-plot(suicide_tree)
-```
-
-
-## Analysis Cont'd 
-
-**Model** **Diagnostics** 
-
-The package **betareg** allows users to perform both fixed and variable dispersion beta regression [@Zeileis2004].
-
-```{r}
-par(mfrow = c(2, 2))
-plot(suicide_bc, main = "Original Model Diagnostics")
-
-#Identify influential points
-cooks_dist <- cooks.distance(suicide_bc)
-leverage <- hatvalues(suicide_bc)
-residuals <- residuals(suicide_bc, type = "pearson")
-
-# Set thresholds
-cooks_threshold <- 4 / nrow(suicide_dataset)
-leverage_threshold <- 2 * (length(coef(suicide_bc)) / nrow(suicide_dataset))
-residual_threshold <- 3  
-
-#Identify extreme points
-extreme_points <- which(cooks_dist > cooks_threshold |
-                        leverage > leverage_threshold |
-                        abs(residuals) > residual_threshold)
-
-suicide_dataset_cleaned <- suicide_dataset[-extreme_points, ] #Remove extreme points 
-```
-
-## Analysis Cont'd 
-
-**Model** **Diagnostics** 
-```{r}
-# Re-fit model
-suicide_bc_cleaned <- betareg(suicide_bc$formula, data = suicide_dataset_cleaned)
-
-#cleaned model
-par(mfrow = c(2, 2))
-plot(suicide_bc_cleaned, main = "Cleaned Model Diagnostics")
-par(mfrow = c(1, 1))
-```
-The cleaned model shows improved fit, with more random residuals, fewer outliers, and reduced data point influence.
-
-## Analysis Cont'd
-
-```{r}
-library(betareg)
-library(ggplot2)
-library(dplyr)
-
-# Fit the beta regression model using the bias-correction
-suicide_bc_cleaned <- betareg(m1, data = suicide_dataset_cleaned, type = "BC")
-
-new_data <- suicide_dataset_cleaned %>%
-  select(HDI_year, GDP_capita, sex, age, generation) %>%
-  distinct()
-
-# new dataset
-new_data$predicted_rate <- predict(suicide_bc_cleaned, newdata = new_data)
-
-# Visualize plot
-ggplot(new_data, aes(x = HDI_year, y = predicted_rate)) +
-  geom_point(alpha = 0.5) +  # Scatter points
-  geom_smooth(method = "loess", color = "blue", fill = "lightblue", se = TRUE) +  # Smooth line
-  labs(title = "Predicted Suicide Rates by HDI Year (Bias-Corrected)",
-       x = "Human Development Index (HDI) Year",
-       y = "Predicted Suicide Rate") +
-  theme_minimal()
-```
-
-
-## Analysis - Reading Skills Dataset
+## Analysis 
 
 **Regressors**
 
@@ -325,9 +129,9 @@ ggplot(new_data, aes(x = HDI_year, y = predicted_rate)) +
 
 Remember dependent variable is in open interval (0, 1)
 
-## Analysis Cont'd
+## Analysis - Model Fitting
 
-**Beta** **Regression** **Fitting:** Bias Corrected (BC)
+**Beta** **Regression:**  Bias Corrected (BC)
 
 ```         
 betareg(
@@ -337,7 +141,7 @@ betareg(
 )
 ```
 
-**General** **Linear** **Regression**
+**General** **Linear** **Regression:**
 ```         
 glm(
   formula = accuracy ~ dcode * iq,
@@ -347,9 +151,11 @@ glm(
 ```
 logit maps (0, 1) to $\mathbb{R}$
 
-## Analysis Cont'd
+## Analysis - Visualizations
 
-**Results** **for** **Normal** **Children**
+::: {.panel-tabset}
+
+### Normal
 
 ```{r}
 library(betareg)
@@ -374,9 +180,7 @@ xlab("IQ (Z-score)") + ylab("Score") + ggtitle("Score by IQ for normal students"
 scale_color_manual(name="Regression Model", breaks=c("beta", "glm"), values=c("beta"="red", "glm"="green"))
 ```
 
-## Analysis Cont'd
-
-**Results** **for** **Dyslexic** **Children**
+### Dyslexic
 
 ```{r}
 ggplot() + geom_point(aes(x=dyslexiaModel$iq, y=dyslexiaModel$accuracy), color="blue") + 
@@ -386,246 +190,9 @@ xlab("IQ (Z-score)") + ylab("Score") + ggtitle("Score by IQ for dyslexic student
 scale_color_manual(name="Regression Model", breaks=c("beta", "glm"), values=c("beta"="blue", "glm"="green"))
 ```
 
-## Results - Suicide Dataset
+:::
 
-```{=html}
-<style type="text/css">
-.tg  {border-collapse:collapse;border-spacing:0;}
-.tg td{border-color:black;border-style:solid;border-width:1px;font-family:Arial, sans-serif;font-size:14px;
-  overflow:hidden;padding:10px 5px;word-break:normal;}
-.tg th{border-color:black;border-style:solid;border-width:1px;font-family:Arial, sans-serif;font-size:14px;
-  font-weight:normal;overflow:hidden;padding:10px 5px;word-break:normal;}
-.tg .tg-2b7s{text-align:right;vertical-align:bottom}
-.tg .tg-5yqz{background-color:#D9D9D9;border-color:inherit;font-weight:bold;text-align:left;vertical-align:bottom}
-.tg .tg-7zrl{text-align:left;vertical-align:bottom}
-.tg .tg-j6zm{font-weight:bold;text-align:left;vertical-align:bottom}
-.tg .tg-0lax{text-align:left;vertical-align:top}
-</style>
-
-<!-- First Table for Slide 1 -->
-<table class="tg">
-  <thead>
-    <tr>
-      <th class="tg-5yqz" colspan="5"><span style="font-weight:bold;background-color:#D9D9D9">Table 2. Impact of Socioeconomic Factors on Suicide Rates: Base and Bias-Corrected Models (Part 1)</span></th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td class="tg-7zrl"></td>
-      <td class="tg-j6zm" colspan="2"><span style="font-weight:bold">Beta Regression Base Model</span></td>
-      <td class="tg-j6zm" colspan="2"><span style="font-weight:bold">Bias Correction Beta Regression</span></td>
-    </tr>
-    <tr>
-      <td class="tg-j6zm"><span style="font-weight:bold">Variable</span></td>
-      <td class="tg-7zrl">Beta (SE)</td>
-      <td class="tg-7zrl">p-value</td>
-      <td class="tg-7zrl">Beta (SE)</td>
-      <td class="tg-7zrl">p-value</td>
-    </tr>
-  <tr>
-    <td class="tg-7zrl">Intercept</td>
-    <td class="tg-7zrl">-5.75 (0.121)</td>
-    <td class="tg-7zrl">&lt; 2e-16</td>
-    <td class="tg-7zrl">-5.49 (1.53)</td>
-    <td class="tg-7zrl">&lt; 2e-16</td>
-  </tr>
-  <tr>
-    <td class="tg-7zrl">HDI_year</td>
-    <td class="tg-7zrl">3.60 (0.160)</td>
-    <td class="tg-7zrl">&lt; 2e-16</td>
-    <td class="tg-7zrl">3.31 (2.03)</td>
-    <td class="tg-7zrl">&lt; 2e-16</td>
-  </tr>
-  <tr>
-    <td class="tg-7zrl">GDP_capita</td>
-    <td class="tg-7zrl">-6.4e-06 (6.44e-07)</td>
-    <td class="tg-7zrl">&lt; 2e-16</td>
-    <td class="tg-7zrl">-8.7e-06 (7.3e-07)</td>
-    <td class="tg-7zrl">&lt; 2e-16</td>
-  </tr>
-  <tr>
-    <td class="tg-7zrl">Sex (Male)</td>
-    <td class="tg-7zrl">0.81 (0.019)</td>
-    <td class="tg-7zrl">&lt; 2e-16</td>
-    <td class="tg-7zrl">0.82 (0.018)</td>
-    <td class="tg-7zrl">&lt; 2e-16</td>
-  </tr>
-  <tr>
-    <td class="tg-7zrl">Age 25-34 years</td>
-    <td class="tg-7zrl">0.084 (0.033)</td>
-    <td class="tg-7zrl">0.0099</td>
-    <td class="tg-7zrl">0.090 (0.032)</td>
-    <td class="tg-7zrl">0.0053</td>
-  </tr>
-  <tr>
-    <td class="tg-7zrl">Age 35-54 years</td>
-    <td class="tg-7zrl">0.070 (0.040)</td>
-    <td class="tg-7zrl">0.080</td>
-    <td class="tg-7zrl">0.086 (0.040)</td>
-    <td class="tg-7zrl">0.030</td>
-  </tr>
-  <tr>
-    <td class="tg-7zrl">Age 5-14 years</td>
-    <td class="tg-7zrl">-0.96 (0.046)</td>
-    <td class="tg-7zrl">&lt; 2e-16</td>
-    <td class="tg-7zrl">-0.96 (0.046)</td>
-    <td class="tg-7zrl">&lt; 2e-16</td>
-  </tr>
-  <tr>
-    <td class="tg-7zrl">Age 55-74 years</td>
-    <td class="tg-7zrl">-0.16 (0.053)</td>
-    <td class="tg-7zrl">0.0030</td>
-    <td class="tg-7zrl">-0.13 (0.053)</td>
-    <td class="tg-7zrl">0.011</td>
-  </tr>
-  <tr>
-    <td class="tg-7zrl">Age 75+ years</td>
-    <td class="tg-7zrl">-0.21 (0.060)</td>
-    <td class="tg-7zrl">0.00047</td>
-    <td class="tg-7zrl">-0.18 (0.060)</td>
-    <td class="tg-7zrl">0.0024</td>
-  </tr>
-  <tr>
-    <td class="tg-7zrl">G.I. Generation</td>
-    <td class="tg-7zrl">0.51 (0.048)</td>
-    <td class="tg-7zrl">&lt; 2e-16</td>
-    <td class="tg-7zrl">0.49 (0.048)</td>
-    <td class="tg-7zrl">&lt; 2e-16</td>
-  </tr>
-  <tr>
-    <td class="tg-7zrl">Generation X</td>
-    <td class="tg-7zrl">-0.22 (0.037)</td>
-    <td class="tg-7zrl">4.66E-09</td>
-    <td class="tg-7zrl">-0.21 (0.037)</td>
-    <td class="tg-7zrl">9.60E-09</td>
-  </tr>
-  <tr>
-    <td class="tg-7zrl">Generation Z</td>
-    <td class="tg-7zrl">-0.49 (0.068)</td>
-    <td class="tg-7zrl">3.03E-13</td>
-    <td class="tg-7zrl">-0.56 (0.067)</td>
-    <td class="tg-7zrl">&lt; 2e-16</td>
-  </tr>
-  <tr>
-    <td class="tg-7zrl">Generation Millennials</td>
-    <td class="tg-7zrl">-0.42 (0.046)</td>
-    <td class="tg-7zrl">&lt; 2e-16</td>
-    <td class="tg-7zrl">-0.43 (0.046)</td>
-    <td class="tg-7zrl">&lt; 2e-16</td>
-  </tr>
-  </tbody>
-</table>
-```
-
-## Results Cont'd
-
-```{=html}
-<style type="text/css">
-.tg  {border-collapse:collapse;border-spacing:0;}
-.tg td{border-color:black;border-style:solid;border-width:1px;font-family:Arial, sans-serif;font-size:14px;
-  overflow:hidden;padding:10px 5px;word-break:normal;}
-.tg th{border-color:black;border-style:solid;border-width:1px;font-family:Arial, sans-serif;font-size:14px;
-  font-weight:normal;overflow:hidden;padding:10px 5px;word-break:normal;}
-.tg .tg-2b7s{text-align:right;vertical-align:bottom}
-.tg .tg-j6zm{font-weight:bold;text-align:left;vertical-align:bottom}
-.tg .tg-7zrl{text-align:left;vertical-align:bottom}
-.tg .tg-0lax{text-align:left;vertical-align:top}
-</style>
-<table class="tg"><thead>
-  <tr>
-    <th class="tg-j6zm">G.I. Generation</th>
-    <th class="tg-7zrl">0.51 (0.048)</th>
-    <th class="tg-7zrl">&lt; 2e-16</th>
-    <th class="tg-7zrl">0.49 (0.048)</th>
-    <th class="tg-7zrl">&lt; 2e-16</th>
-  </tr></thead>
-<tbody>
-  <tr>
-    <td class="tg-7zrl">Generation X</td>
-    <td class="tg-7zrl">-0.22 (0.037)</td>
-    <td class="tg-2b7s">4.66E-09</td>
-    <td class="tg-7zrl">-0.21 (0.037)</td>
-    <td class="tg-2b7s">9.60E-09</td>
-  </tr>
-  <tr>
-    <td class="tg-7zrl">Generation Z</td>
-    <td class="tg-7zrl">-0.49 (0.068)</td>
-    <td class="tg-2b7s">3.03E-13</td>
-    <td class="tg-7zrl">-0.56 (0.067)</td>
-    <td class="tg-7zrl">&lt; 2e-16</td>
-  </tr>
-  <tr>
-    <td class="tg-7zrl">Generation Millennials</td>
-    <td class="tg-7zrl">-0.42 (0.046)</td>
-    <td class="tg-7zrl">&lt; 2e-16</td>
-    <td class="tg-7zrl">-0.43 (0.046)</td>
-    <td class="tg-7zrl">&lt; 2e-16</td>
-  </tr>
-  <tr>
-    <td class="tg-7zrl">Generation Silent</td>
-    <td class="tg-7zrl">0.098 (0.037)</td>
-    <td class="tg-2b7s">0.0086</td>
-    <td class="tg-7zrl">0.091 (0.037)</td>
-    <td class="tg-2b7s">0.013</td>
-  </tr>
-  <tr>
-    <td class="tg-j6zm"><span style="font-weight:bold">Precision Model</span></td>
-    <td class="tg-7zrl"></td>
-    <td class="tg-7zrl"></td>
-    <td class="tg-7zrl"></td>
-    <td class="tg-7zrl"></td>
-  </tr>
-  <tr>
-    <td class="tg-7zrl">HDI_year</td>
-    <td class="tg-7zrl"></td>
-    <td class="tg-7zrl"></td>
-    <td class="tg-7zrl">0.64 (0.289)</td>
-    <td class="tg-2b7s">0.026</td>
-  </tr>
-  <tr>
-    <td class="tg-7zrl">GDP_capita</td>
-    <td class="tg-7zrl"></td>
-    <td class="tg-7zrl"></td>
-    <td class="tg-7zrl">8.31e-06 (1.15e-06)</td>
-    <td class="tg-2b7s">4.75E-13</td>
-  </tr>
-  <tr>
-    <td class="tg-j6zm"><span style="font-weight:bold">Model Fit</span></td>
-    <td class="tg-7zrl"></td>
-    <td class="tg-7zrl"></td>
-    <td class="tg-7zrl"></td>
-    <td class="tg-7zrl"></td>
-  </tr>
-  <tr>
-    <td class="tg-7zrl"><span style="font-weight:400;font-style:normal;color:#000">Pseudo R-squared</span></td>
-    <td class="tg-2b7s"><span style="font-weight:400;font-style:normal;color:#000">0.4623</span></td>
-    <td class="tg-7zrl"></td>
-    <td class="tg-2b7s"><span style="font-weight:400;font-style:normal;color:#000">0.4625</span></td>
-    <td class="tg-0lax"></td>
-  </tr>
-</tbody></table>
-
-```
-
-## Results Cont'd
-
--   Lower HDI values (≤ 0.661) associated with higher variability in suicide rates, indicating socio-economic instability.
-
--   Higher HDI values (> 0.759) show lower, more stable suicide rates, suggesting better socio-economic conditions reduce suicide risk.
-
--   Initially, higher HDI leads to lower suicide rates, but at higher HDI levels, suicide rates slightly increase, highlighting complex influences beyond economic factors.
-
-
-## Results Cont'd
-
-**Model** **Performance**
-
--   Base model: HDI, GDP, sex, age, and generation are significant predictors of suicide rates.
-
--   Extended model (with varying precision): Slightly improved fit, capturing more complexity in socio-economic factors influencing suicide rates.
-
-
-## Results - Reading Skills Dataset
+## Results
 
 **Table** **2**
 
@@ -719,6 +286,409 @@ A child's odds of answering a reading skills question correctly decreases by a f
 -   If a dyslexic child's IQ increases by 1 standard deviation, their odds of answering a reading skills question correctly decreases by a factor of $e^{0.095}$
 
   -0.095 = 1.049 - 1.144
+
+
+
+
+
+## Extended Beta Regression
+
+**Bias** **Correction/Reduction** - **Type** **of** **Estimator:**
+
+-   ML (Maximum Likelihood): Standard method, useful but may yield biased estimates in certain conditions.[@Grun2012]
+
+-   BC (Bias-Corrected): Adjusts estimates to correct for bias, providing more reliable parameter values.
+
+-   BR (Bias-Reduced): Shrinks estimates towards a central value, which can improve predictive performance.
+
+## Extended Beta Regression
+
+**Beta** **Regression** **Trees**
+
+-   This extension uses recursive partitioning to model data that might exhibit subgroup-specific relationships.
+
+-   It builds decision trees by splitting data into different subgroups based on the instability of model parameters across partitioning variables. 
+
+
+## Methods - Suicide Rates Dataset
+Model Approach:
+
+-   Beta Regression was used to model suicide rates as a function of socio-economic factors, appropriate for data bounded between 0 and 1.
+
+-   Dataset: Suicide Rates Overview 1985 to 2016, with variables like HDI, GDP per capita, sex, age group, and generation.
+
+-   Cleaned data by removing outliers using **Cook’s distance** and **leverage** analysis.
+
+-   Managed missing values and calculated descriptive statistics.
+
+## Methods Cont'd
+
+Model Details:
+
+-   Incorporated interaction terms and adjusted precision (phi) to account for variance differences across groups.
+
+-   Used beta regression trees to capture nonlinear relationships.
+
+Evaluation:
+
+-   Model performance assessed via pseudo R-squared.
+
+-   Software: R for data management and analysis.
+
+
+
+## Analysis 
+
+**Extended** **Beta** **Regression**
+
+```{r}
+library(betareg)
+library(readr)
+
+# Load and clean the dataset
+suicide_dataset <- read_csv("master.csv")
+
+# Rescale suicide rates and handle 0s and 1s
+max_suicide_rate <- max(suicide_dataset$`suicides/100k pop`, na.rm = TRUE)
+suicide_dataset$suicide_rate <- ifelse(suicide_dataset$`suicides/100k pop` == 0, 0.001,
+                                        ifelse(suicide_dataset$`suicides/100k pop` == max_suicide_rate, 0.999,
+                                               suicide_dataset$`suicides/100k pop` / max_suicide_rate))
+
+# Rename 
+names(suicide_dataset)[names(suicide_dataset) == "HDI for year"] <- "HDI_year"
+names(suicide_dataset)[names(suicide_dataset) == "gdp_per_capita ($)"] <- "GDP_capita"
+
+# Remove NA
+suicide_dataset <- na.omit(suicide_dataset)
+
+base_formula <- suicide_rate ~ HDI_year + GDP_capita + sex + age + generation
+
+# Fit the base beta regression model
+m_base <- betareg(base_formula, data = suicide_dataset)
+
+# code for BC model
+m1 <- suicide_rate ~ HDI_year + GDP_capita + sex + age + generation | HDI_year + GDP_capita
+
+suicide_bc <- betareg(m1, data = suicide_dataset, type = "BC")
+```
+Beta Regression Base Model:
+```         
+betareg(
+  formula = suicide_rate ~ HDI_year + GDP_capita + sex + age + generation,
+  data = suicide_dataset,
+)
+```
+Bias Corrected (BC) Model:
+```         
+betareg(
+  formula = suicide_rate ~ HDI_year + GDP_capita + sex + age + generation | HDI_year + GDP_capita,
+  data = suicide_dataset,
+  type = "BC",
+)
+```
+
+## Analysis
+
+**Extended** **Beta** **Regression**
+
+**Beta** **Regression** **Trees:**
+
+The beta regression tree shows HDI_year as a key predictor, with specific thresholds creating groupings where higher HDI_year values link to better outcomes and smaller nodes show more variability.
+
+## Analysis - Beta Regression Tree
+
+Figure 1. Beta Regression Tree for Predicting Suicide Rate Based on HDI
+
+```{r}
+library(partykit)
+set.seed(123)
+
+# Randomly sample 20% of the data
+sample_indices <- sample(seq_len(nrow(suicide_dataset)), size = 0.2 * nrow(suicide_dataset))
+suicide_sample <- suicide_dataset[sample_indices, ]
+
+# Fit the model on the sample
+suicide_tree <- betatree(suicide_rate ~ HDI_year, 
+                         data = suicide_sample, 
+                         minsplit = 20,
+                         control = betatree.control(maxdepth = 3))
+
+# Plot the resulting tree
+plot(suicide_tree)
+```
+
+
+## Analysis - Model Diagnostics
+
+::: {.panel-tabset}
+
+### Overview
+
+-   The package **betareg** allows users to perform both fixed and variable dispersion beta regression [@Zeileis2004].
+
+-   The cleaned model shows improved fit, with more random residuals, fewer outliers, and reduced data point influence.
+
+### Original
+
+
+```{r}
+
+# Plot 1
+
+par(mfrow = c(2, 2))
+plot(suicide_bc, main = "Original Model Diagnostics")
+
+#Identify influential points
+cooks_dist <- cooks.distance(suicide_bc)
+leverage <- hatvalues(suicide_bc)
+residuals <- residuals(suicide_bc, type = "pearson")
+
+# Set thresholds
+cooks_threshold <- 4 / nrow(suicide_dataset)
+leverage_threshold <- 2 * (length(coef(suicide_bc)) / nrow(suicide_dataset))
+residual_threshold <- 3  
+
+#Identify extreme points
+extreme_points <- which(cooks_dist > cooks_threshold |
+                        leverage > leverage_threshold |
+                        abs(residuals) > residual_threshold)
+
+suicide_dataset_cleaned <- suicide_dataset[-extreme_points, ] #Remove extreme points 
+```
+
+### Cleaned
+
+```{r}
+# Re-fit model
+suicide_bc_cleaned <- betareg(suicide_bc$formula, data = suicide_dataset_cleaned)
+
+#cleaned model
+par(mfrow = c(2, 2))
+plot(suicide_bc_cleaned, main = "Cleaned Model Diagnostics")
+par(mfrow = c(1, 1))
+```
+
+
+### Graph
+
+```{r}
+library(betareg)
+library(ggplot2)
+library(dplyr)
+
+# Fit the beta regression model using the bias-correction
+suicide_bc_cleaned <- betareg(m1, data = suicide_dataset_cleaned, type = "BC")
+
+new_data <- suicide_dataset_cleaned %>%
+  select(HDI_year, GDP_capita, sex, age, generation) %>%
+  distinct()
+
+# new dataset
+new_data$predicted_rate <- predict(suicide_bc_cleaned, newdata = new_data)
+
+# Visualize plot
+ggplot(new_data, aes(x = HDI_year, y = predicted_rate)) +
+  geom_point(alpha = 0.5) +  # Scatter points
+  geom_smooth(method = "loess", color = "blue", fill = "lightblue", se = TRUE) +  # Smooth line
+  labs(title = "Predicted Suicide Rates by HDI Year (Bias-Corrected)",
+       x = "Human Development Index (HDI) Year",
+       y = "Predicted Suicide Rate") +
+  theme_minimal()
+```
+
+
+:::
+
+
+
+
+## Results - Table 2
+
+```{=html}
+<style type="text/css">
+.tg  {border-collapse:collapse;border-spacing:0;}
+.tg td{border-color:black;border-style:solid;border-width:1px;font-family:Arial, sans-serif;font-size:14px;
+  overflow:hidden;padding:10px 5px;word-break:normal;}
+.tg th{border-color:black;border-style:solid;border-width:1px;font-family:Arial, sans-serif;font-size:14px;
+  font-weight:normal;overflow:hidden;padding:10px 5px;word-break:normal;}
+.tg .tg-l6pp{background-color:#D9D9D9;border-color:inherit;font-size:14px;font-weight:bold;text-align:left;vertical-align:bottom}
+.tg .tg-7zrl{text-align:left;vertical-align:bottom}
+.tg .tg-j6zm{font-weight:bold;text-align:left;vertical-align:bottom}
+.tg .tg-0lax{text-align:left;vertical-align:top}
+</style>
+<table class="tg"><thead>
+  <tr>
+    <th class="tg-l6pp" colspan="5"><span style="font-weight:bold;background-color:#D9D9D9">Table 2. Impact of Socioeconomic Factors on Suicide Rates: Base and Bias-Corrected Models</span></th>
+  </tr></thead>
+<tbody>
+  <tr>
+    <td class="tg-7zrl"></td>
+    <td class="tg-j6zm" colspan="2"><span style="font-weight:bold">Beta Regression Base Model</span></td>
+    <td class="tg-j6zm" colspan="2"><span style="font-weight:bold">Bias Correction Beta Regression</span></td>
+  </tr>
+  <tr>
+    <td class="tg-j6zm"><span style="font-weight:bold">Variable</span></td>
+    <td class="tg-7zrl">Beta (SE)</td>
+    <td class="tg-7zrl">p-value</td>
+    <td class="tg-7zrl">Beta (SE)</td>
+    <td class="tg-7zrl">p-value</td>
+  </tr>
+  <tr>
+    <td class="tg-7zrl">Intercept</td>
+    <td class="tg-7zrl">-5.75 (0.121)</td>
+    <td class="tg-7zrl">&lt; 2e-16</td>
+    <td class="tg-7zrl">-5.49 (1.53)</td>
+    <td class="tg-7zrl">&lt; 2e-16</td>
+  </tr>
+  <tr>
+    <td class="tg-7zrl">HDI_year</td>
+    <td class="tg-7zrl">3.60 (0.160)</td>
+    <td class="tg-7zrl">&lt; 2e-16</td>
+    <td class="tg-7zrl">3.31 (2.03)</td>
+    <td class="tg-7zrl">&lt; 2e-16</td>
+  </tr>
+  <tr>
+    <td class="tg-7zrl">GDP_capita</td>
+    <td class="tg-7zrl">-6.4e-06 (6.44e-07)</td>
+    <td class="tg-7zrl">&lt; 2e-16</td>
+    <td class="tg-7zrl">-8.7e-06 (7.3e-07)</td>
+    <td class="tg-7zrl">&lt; 2e-16</td>
+  </tr>
+  <tr>
+    <td class="tg-7zrl">Sex (Male)</td>
+    <td class="tg-7zrl">0.81 (0.019)</td>
+    <td class="tg-7zrl">&lt; 2e-16</td>
+    <td class="tg-7zrl">0.82 (0.018)</td>
+    <td class="tg-7zrl">&lt; 2e-16</td>
+  </tr>
+  <tr>
+    <td class="tg-7zrl">Age 25-34 years</td>
+    <td class="tg-7zrl">0.084 (0.033)</td>
+    <td class="tg-7zrl">0.0099</td>
+    <td class="tg-7zrl">0.090 (0.032)</td>
+    <td class="tg-7zrl">0.0053</td>
+  </tr>
+  <tr>
+    <td class="tg-7zrl">Age 35-54 years</td>
+    <td class="tg-7zrl">0.070 (0.040)</td>
+    <td class="tg-7zrl">0.08</td>
+    <td class="tg-7zrl">0.086 (0.040)</td>
+    <td class="tg-7zrl">0.03</td>
+  </tr>
+  <tr>
+    <td class="tg-7zrl">Age 5-14 years</td>
+    <td class="tg-7zrl">-0.96 (0.046)</td>
+    <td class="tg-7zrl">&lt; 2e-16</td>
+    <td class="tg-7zrl">-0.96 (0.046)</td>
+    <td class="tg-7zrl">&lt; 2e-16</td>
+  </tr>
+  <tr>
+    <td class="tg-7zrl">Age 55-74 years</td>
+    <td class="tg-7zrl">-0.16 (0.053)</td>
+    <td class="tg-7zrl">0.003</td>
+    <td class="tg-7zrl">-0.13 (0.053)</td>
+    <td class="tg-7zrl">0.011</td>
+  </tr>
+  <tr>
+    <td class="tg-7zrl">Age 75+ years</td>
+    <td class="tg-7zrl">-0.21 (0.060)</td>
+    <td class="tg-7zrl">0.00047</td>
+    <td class="tg-7zrl">-0.18 (0.060)</td>
+    <td class="tg-7zrl">0.0024</td>
+  </tr>
+  <tr>
+    <td class="tg-7zrl">G.I. Generation</td>
+    <td class="tg-7zrl">0.51 (0.048)</td>
+    <td class="tg-7zrl">&lt; 2e-16</td>
+    <td class="tg-7zrl">0.49 (0.048)</td>
+    <td class="tg-7zrl">&lt; 2e-16</td>
+  </tr>
+  <tr>
+    <td class="tg-7zrl">Generation X</td>
+    <td class="tg-7zrl">-0.22 (0.037)</td>
+    <td class="tg-7zrl">4.66E-09</td>
+    <td class="tg-7zrl">-0.21 (0.037)</td>
+    <td class="tg-7zrl">9.60E-09</td>
+  </tr>
+  <tr>
+    <td class="tg-7zrl">Generation Z</td>
+    <td class="tg-7zrl">-0.49 (0.068)</td>
+    <td class="tg-7zrl">3.03E-13</td>
+    <td class="tg-7zrl">-0.56 (0.067)</td>
+    <td class="tg-7zrl">&lt; 2e-16</td>
+  </tr>
+  <tr>
+    <td class="tg-7zrl">Generation Millennials</td>
+    <td class="tg-7zrl">-0.42 (0.046)</td>
+    <td class="tg-7zrl">&lt; 2e-16</td>
+    <td class="tg-7zrl">-0.43 (0.046)</td>
+    <td class="tg-7zrl">&lt; 2e-16</td>
+  </tr>
+  <tr>
+    <td class="tg-7zrl">Generation Silent</td>
+    <td class="tg-7zrl">0.098 (0.037)</td>
+    <td class="tg-7zrl">0.0086</td>
+    <td class="tg-7zrl">0.091 (0.037)</td>
+    <td class="tg-7zrl">0.013</td>
+  </tr>
+  <tr>
+    <td class="tg-j6zm"><span style="font-weight:bold">Precision Model</span></td>
+    <td class="tg-7zrl"></td>
+    <td class="tg-7zrl"></td>
+    <td class="tg-7zrl"></td>
+    <td class="tg-7zrl"></td>
+  </tr>
+  <tr>
+    <td class="tg-7zrl">HDI_year</td>
+    <td class="tg-7zrl"></td>
+    <td class="tg-7zrl"></td>
+    <td class="tg-7zrl">0.64 (0.289)</td>
+    <td class="tg-7zrl">0.026</td>
+  </tr>
+  <tr>
+    <td class="tg-7zrl">GDP_capita</td>
+    <td class="tg-7zrl"></td>
+    <td class="tg-7zrl"></td>
+    <td class="tg-7zrl">8.31e-06 (1.15e-06)</td>
+    <td class="tg-7zrl">4.75E-13</td>
+  </tr>
+  <tr>
+    <td class="tg-j6zm"><span style="font-weight:bold">Model Fit</span></td>
+    <td class="tg-7zrl"></td>
+    <td class="tg-7zrl"></td>
+    <td class="tg-7zrl"></td>
+    <td class="tg-7zrl"></td>
+  </tr>
+  <tr>
+    <td class="tg-7zrl"><span style="font-weight:400;font-style:normal;color:#000">Pseudo R-squared</span></td>
+    <td class="tg-7zrl"><span style="font-weight:400;font-style:normal;color:#000">0.4623</span></td>
+    <td class="tg-7zrl"></td>
+    <td class="tg-7zrl"><span style="font-weight:400;font-style:normal;color:#000">0.4625</span></td>
+    <td class="tg-0lax"></td>
+  </tr>
+</tbody></table>
+```
+
+
+## Results Cont'd
+
+-   Lower HDI values (≤ 0.661) associated with higher variability in suicide rates, indicating socio-economic instability.
+
+-   Higher HDI values (> 0.759) show lower, more stable suicide rates, suggesting better socio-economic conditions reduce suicide risk.
+
+-   Initially, higher HDI leads to lower suicide rates, but at higher HDI levels, suicide rates slightly increase, highlighting complex influences beyond economic factors.
+
+
+## Results Cont'd
+
+**Model** **Performance**
+
+-   Base model: HDI, GDP, sex, age, and generation are significant predictors of suicide rates.
+
+-   Extended model (with varying precision): Slightly improved fit, capturing more complexity in socio-economic factors influencing suicide rates.
+
+
+
 
 ## Conclusion
 
